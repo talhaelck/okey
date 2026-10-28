@@ -49,16 +49,18 @@ is_local = true
 
 [node name="Seat1" parent="Seats" instance=ExtResource("4_seat")]
 seat_index = 1
-character = "rabbit"
+character = "bunny"
+character_height = 1.08
 
 [node name="Seat2" parent="Seats" instance=ExtResource("4_seat")]
 seat_index = 2
-character = "blue_buddy"
-character_height = 1.05
+character = "panda"
+character_height = 0.95
 
 [node name="Seat3" parent="Seats" instance=ExtResource("4_seat")]
 seat_index = 3
-character = "cactoro"
+character = "dinosaur"
+character_height = 0.95
 
 [node name="FocusCamera" type="Camera3D" parent="."]
 attributes = SubResource("CameraAttributes_focus")

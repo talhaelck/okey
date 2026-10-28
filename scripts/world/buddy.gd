@@ -1,6 +1,6 @@
 class_name Buddy
 extends Node3D
-## Animated CC0 character in an opponent seat (models live in assets/models/characters).
+## Animated character in an opponent seat: authored mascots or legacy CC0 glTF models.
 ## Visual only: Watcher decides where it looks and when it reacts. Faces the table along -Z when idle.
 
 const TURN_TIME := 0.3
@@ -10,9 +10,20 @@ var _anim: AnimationPlayer
 var _idle := ""
 var _tween: Tween
 var _alert := Label3D.new()
+var _mascot: MascotCharacter
 
 
 func setup(model: String, height: float) -> void:
+	if model in MascotCharacter.KINDS:
+		_mascot = MascotCharacter.new()
+		add_child(_mascot)
+		_mascot.build(model, height)
+	else:
+		_setup_imported(model, height)
+	_setup_alert(height)
+
+
+func _setup_imported(model: String, height: float) -> void:
 	var body: Node3D = load("res://assets/models/characters/%s.glb" % model).instantiate()
 	add_child(body)
 	body.scale = Vector3.ONE * height / _bounds(body).size.y
@@ -26,6 +37,8 @@ func setup(model: String, height: float) -> void:
 	_anim.seek(randf() * _anim.current_animation_length)
 	_anim.animation_finished.connect(func(_name: StringName) -> void: _anim.play(_idle, 0.2))
 
+
+func _setup_alert(height: float) -> void:
 	_alert.text = "!"
 	_alert.font_size = 160
 	_alert.pixel_size = 0.001
@@ -49,6 +62,10 @@ func look_home() -> void:
 
 
 func gesture(suffix: String) -> void:
+	if _mascot:
+		if suffix == "No":
+			_mascot.react()
+		return
 	var name := _animation(suffix)
 	if not name.is_empty():
 		_anim.play(name, 0.15)
@@ -59,6 +76,9 @@ func set_alert(on: bool) -> void:
 
 
 func _turn(yaw: float) -> void:
+	if _mascot:
+		_mascot.turn_head(yaw, TURN_TIME)
+		return
 	if _tween:
 		_tween.kill()
 	_tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)

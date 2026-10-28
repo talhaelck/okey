@@ -11,7 +11,7 @@ const GLOVE := Color(0.97, 0.97, 0.97)
 
 @export var seat_index := 0
 @export var is_local := false
-## Model name in assets/models/characters; unused for the local player.
+## Mascot kind (panda/bunny/dinosaur) or legacy glTF filename; unused for the local player.
 @export var character := ""
 ## Overall model height in metres (sitting models need less than standing ones).
 @export var character_height := 0.85

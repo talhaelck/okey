@@ -19,7 +19,7 @@ scenes/            main.tscn (entry), table.tscn, seat.tscn
 scripts/main.gd    deals tiles, wires camera/hand/watchers/HUD, debug screenshot mode
 scripts/camera/    focus_camera.gd: observe/rack modes + depth-of-field blur
 scripts/world/     rounded_box, toon (materials), tile + tile_factory, rack (2x15 slots), table (pile, loose tiles),
-                   seat, buddy (animated glTF opponent), room
+                   seat, buddy (mascot/legacy glTF adapter), mascot_character (procedural seated characters), room
 scripts/play/      hand.gd: local glove, ray picking, drop targets, steal/caught; watcher.gd: opponent glance AI
 scripts/ui/        hud.gd: crosshair, hint, score, flash messages (built in code)
 assets/            models/characters/*.glb, CREDITS.md (license + source for every asset)
@@ -40,7 +40,7 @@ assets/            models/characters/*.glb, CREDITS.md (license + source for eve
 ## Status (2026-10-29)
 - Done: Phase 1 (room, table, seats, racks, tiles, deal, observe/rack camera with depth-of-field blur).
 - Done: Phase 2 single-player demo.
-  - Opponents are CC0 Quaternius characters (`character` / `character_height` on each Seat in main.tscn), idle-animated.
+  - Opponents are medium-build seated mascots: `bunny`, `panda`, `dinosaur` (`character` / `character_height` on each Seat in main.tscn). Their heads turn independently of their bodies; breathing, blinking and caught-thief head shakes are procedural. Legacy CC0 Quaternius filenames still work.
   - Left click grabs/drops: aim with the crosshair in observe mode, with the mouse in rack mode. Reach is 1.35 m.
   - Drops go to the nearest free slot on any rack, or loose on the felt.
   - Tiles taken from another player's rack are "stolen" until dropped. If a Watcher looks at you meanwhile,
