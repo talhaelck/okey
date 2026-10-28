@@ -1,6 +1,6 @@
 class_name Hand
 extends Node3D
-## The local player's reach: the right glove picks tiles up and puts them on any rack or the felt.
+## The local player's reach: the right hand picks tiles up and puts them on any rack or the felt.
 ## Aims with the mouse in rack mode, with the screen centre (crosshair) in observe mode.
 ## A tile lifted from someone else's rack is stolen until it lands; if a watcher looks at you
 ## meanwhile, it snaps back to its owner and you are caught.
@@ -68,8 +68,12 @@ func _process(delta: float) -> void:
 		hint = "" if _hovered == null else ("Sol tık: çal" if _is_foreign(_hovered.holder) else "Sol tık: al")
 	var glove_target := _glove_rest
 	if held:
-		# Cup the tile from below so the glove never hides its face.
-		glove_target.origin = held.global_position - held.global_basis.y * 0.06 			+ (camera.global_position - held.global_position).normalized() * 0.01
+		# Pinch the tile from below so the hand never hides its face, fingers pointing away from the shoulder.
+		glove_target.origin = held.global_position - held.global_basis.y * 0.05 \
+			+ (camera.global_position - held.global_position).normalized() * 0.03
+		var reach := glove_target.origin - (_glove_rest.origin + _glove_rest.basis.z * 0.4)
+		reach.y = 0.0
+		glove_target.basis = Basis.looking_at(reach)
 	seat.glove.global_transform = seat.glove.global_transform.interpolate_with(glove_target, 1.0 - exp(-FOLLOW * delta))
 
 

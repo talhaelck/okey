@@ -8,6 +8,7 @@ const DEPTH := 7.5 # along Z
 const HEIGHT := 3.0
 const PANEL := 1.1 # height of the wooden wainscot
 const WALL := 0.06
+const TEA_TABLE_TOP := 0.757 # round_wooden_table_01 at 0.75 scale
 const LAMP_WARM := Color(1.0, 0.82, 0.62)
 
 var _fan: Node3D
@@ -84,6 +85,7 @@ func _background_table(at: Vector3, yaw: float) -> void:
 		var seat_pos := dir * 0.85
 		Mat.model(table, "plastic_monobloc_chair_01", seat_pos, angle + PI)
 		if i < 2:
+			Mat.prop(table, "tea_set", dir * 0.35 + Vector3(0, TEA_TABLE_TOP, 0), randf() * TAU)
 			var regular := Buddy.new()
 			regular.position = seat_pos + Vector3(0, Seat.SEAT_TOP - 0.03, 0) - dir * 0.04
 			regular.rotation.y = angle
@@ -102,7 +104,9 @@ func _props() -> void:
 		var shelf := Mat.model(self, "painted_wooden_shelves", Vector3(left + 0.02, 0, z), PI / 2)
 		shelf.scale = Vector3.ONE * 1.2
 	Mat.model(self, "jug_01", Vector3(left + 0.22, 1.36, -0.6), PI / 2)
-	Mat.model(self, "brass_pot_01", Vector3(left + 0.22, 1.36, 0.0), 0.4)
+	Mat.prop(self, "semaver", Vector3(left + 0.24, 1.36, 0.0), PI / 2)
+	for i in 3:
+		Mat.prop(self, "tea_set", Vector3(left + 0.2, 1.36, 0.22 + i * 0.1), randf() * TAU)
 	Mat.model(self, "mantel_clock_01", Vector3(left + 0.2, 1.36, 0.25), PI / 2, 1.1)
 
 	# Old TV up on a bracket in the back-right corner, its screen glow flickering on the wall.

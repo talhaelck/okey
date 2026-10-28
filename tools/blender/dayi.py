@@ -8,16 +8,14 @@ Every customisable part is its own top-level node under "Dayi" (hat_*, mustache_
 so the game can toggle and recolour parts for the character creator.
 """
 import math
+import os
 import sys
 
-import bpy
-from mathutils import Euler, Vector
+sys.path.append(os.path.dirname(__file__))
+from kit import *  # noqa: E402,F403
 
-STIFF = 2.0
-SIZE_PER_RADIUS = 0.575  # visible radius of a lone ball / element radius at STIFF 2, threshold 0.6
-
-PALETTE = {
-    "skin": (0.93, 0.66, 0.5),
+COLORS = {
+    "skin": SKIN,
     "atlet": (0.95, 0.94, 0.9),
     "vest": (0.36, 0.22, 0.15),
     "trousers": (0.27, 0.28, 0.33),
@@ -28,80 +26,11 @@ PALETTE = {
     "eye": (0.04, 0.04, 0.05),
     "shine": (1.0, 1.0, 1.0),
 }
+ROUGHNESS = {"shoes": 0.4, "eye": 0.15}
 
 
-def material(name, roughness=0.6):
-    m = bpy.data.materials.get(name)
-    if m:
-        return m
-    m = bpy.data.materials.new(name)
-    bsdf = m.node_tree.nodes["Principled BSDF"]
-    bsdf.inputs["Base Color"].default_value = (*PALETTE[name], 1.0)
-    bsdf.inputs["Roughness"].default_value = roughness
-    return m
-
-
-def finish(obj, mat_name, parent, roughness=0.6):
-    obj.data.materials.clear()
-    obj.data.materials.append(material(mat_name, roughness))
-    obj.data.shade_smooth()
-    obj.parent = parent
-    return obj
-
-
-def ball(co, size, scale=(1, 1, 1), rot=(0, 0, 0)):
-    """Metaball element whose visible half-extent is roughly size * scale."""
-    return {"type": "ELLIPSOID", "co": co, "r": size / SIZE_PER_RADIUS, "scale": scale, "rot": rot}
-
-
-def capsule(a, b, size):
-    """Rounded limb from point a to point b with visible radius size."""
-    a, b = Vector(a), Vector(b)
-    axis = b - a
-    return {"type": "CAPSULE", "co": (a + b) / 2, "r": size / SIZE_PER_RADIUS,
-            "half": axis.length / 2, "quat": Vector((1, 0, 0)).rotation_difference(axis)}
-
-
-def blob(name, elements, mat_name, parent, resolution=0.014):
-    """Merges metaball elements into one smooth mesh object."""
-    mb = bpy.data.metaballs.new(name)
-    mb.resolution = mb.render_resolution = resolution
-    mb.threshold = 0.6
-    tmp = bpy.data.objects.new(name, mb)
-    bpy.context.scene.collection.objects.link(tmp)
-    for e in elements:
-        el = mb.elements.new(type=e["type"])
-        el.co = e["co"]
-        el.radius = e["r"]
-        el.stiffness = STIFF
-        if e["type"] == "ELLIPSOID":
-            el.size_x, el.size_y, el.size_z = e["scale"]
-            el.rotation = Euler(e["rot"]).to_quaternion()
-        else:
-            # Capsule size_x is the half-length of its core segment.
-            el.size_x = e["half"]
-            el.rotation = e["quat"]
-    mesh = bpy.data.meshes.new_from_object(tmp.evaluated_get(bpy.context.evaluated_depsgraph_get()))
-    bpy.data.objects.remove(tmp)
-    bpy.data.metaballs.remove(mb)
-    obj = bpy.data.objects.new(name, mesh)
-    bpy.context.scene.collection.objects.link(obj)
-    return finish(obj, mat_name, parent)
-
-
-def sphere(name, co, size, scale, mat_name, parent, rot=(0, 0, 0), roughness=0.6):
-    import bmesh
-    mesh = bpy.data.meshes.new(name)
-    bm = bmesh.new()
-    bmesh.ops.create_uvsphere(bm, u_segments=24, v_segments=16, radius=size)
-    bm.to_mesh(mesh)
-    bm.free()
-    obj = bpy.data.objects.new(name, mesh)
-    bpy.context.scene.collection.objects.link(obj)
-    obj.location = co
-    obj.scale = scale
-    obj.rotation_euler = rot
-    return finish(obj, mat_name, parent, roughness)
+def mat(name):
+    return material(name, COLORS[name], ROUGHNESS.get(name, 0.6))
 
 
 def on_head(center, radius, yaw_deg, pitch_deg, lift=0.0):
@@ -112,9 +41,8 @@ def on_head(center, radius, yaw_deg, pitch_deg, lift=0.0):
 
 
 def build():
-    bpy.ops.wm.read_factory_settings(use_empty=True)
-    root = bpy.data.objects.new("Dayi", None)
-    bpy.context.scene.collection.objects.link(root)
+    reset()
+    root = empty("Dayi")
 
     head_c, head_r = (0, 0, 0.8), 0.24
 
@@ -123,16 +51,15 @@ def build():
         ball((0, 0.0, 0.08), 0.19, (1.0, 0.95, 0.6)),
         *[capsule((s * 0.1, -0.02, 0.07), (s * 0.11, -0.24, 0.07), 0.08) for s in (-1, 1)],
         *[capsule((s * 0.11, -0.26, 0.06), (s * 0.11, -0.27, -0.17), 0.075) for s in (-1, 1)],
-    ], "trousers", root)
+    ], mat("trousers"), root)
     for s in (-1, 1):
         sphere("shoe_%s" % ("l" if s > 0 else "r"), (s * 0.11, -0.31, -0.22), 1.0, (0.075, 0.11, 0.05),
-               "shoes", root, roughness=0.4)
+               mat("shoes"), root)
 
     torso = [ball((0, -0.04, 0.24), 0.23, (1.0, 0.95, 0.9)), ball((0, 0.0, 0.42), 0.2, (1.05, 0.85, 0.75))]
-    blob("atlet", torso, "atlet", root)
-    vest = blob("vest", [dict(e, r=e["r"] * 1.06) for e in torso], "vest", root)
+    blob("atlet", torso, mat("atlet"), root)
+    vest = blob("vest", [dict(e, r=e["r"] * 1.06) for e in torso], mat("vest"), root)
     cutter = bpy.data.objects.new("vest_cut", bpy.data.meshes.new("vest_cut"))
-    import bmesh
     bm = bmesh.new()
     # V-shaped wedge in front of the chest: wide at the neck, narrowing to the belly.
     pts = [(-0.11, -0.4, 0.62), (0.11, -0.4, 0.62), (0.02, -0.4, 0.2), (-0.02, -0.4, 0.2)]
@@ -154,16 +81,19 @@ def build():
     cutter.hide_render = cutter.hide_viewport = True
     for i, z in enumerate((0.42, 0.33, 0.24)):
         sphere("vest_button_%d" % i, (0.075 - (0.42 - z) * 0.12, -0.255 - (0.42 - z) * 0.12, z), 0.014,
-               (1, 0.6, 1), "shoes", root, roughness=0.3)
+               (1, 0.6, 1), mat("shoes"), root)
 
-    # Arms resting forward on the table edge, mitten hands with a thumb.
+    # Arms resting forward on the table edge, ending in real chubby hands.
     arms = []
-    for s in (-1, 1):
-        shoulder, elbow, wrist = (s * 0.22, 0.0, 0.45), (s * 0.3, -0.06, 0.27), (s * 0.2, -0.3, 0.3)
-        arms += [capsule(shoulder, elbow, 0.065), capsule(elbow, wrist, 0.06),
-                 ball((s * 0.18, -0.36, 0.31), 0.07, (1.0, 1.15, 0.75)),
-                 ball((s * 0.12, -0.33, 0.33), 0.03, (1.0, 1.3, 0.9))]
-    blob("arms", arms, "skin", root)
+    for side in (-1, 1):
+        shoulder, elbow, wrist = (side * 0.22, 0.0, 0.45), (side * 0.3, -0.06, 0.27), (side * 0.2, -0.3, 0.3)
+        arms += [capsule(shoulder, elbow, 0.065), capsule(elbow, wrist, 0.058)]
+        reach = Vector(wrist) - Vector(elbow)
+        reach.z = 0
+        palm = Vector(wrist) + reach.normalized() * 0.08 + Vector((0, 0, -0.012))
+        hand("hand_" + ("l" if side > 0 else "r"), side, mat("skin"), root,
+             Matrix.Translation(palm) @ frame(reach), chubby=1.1, scale=1.45)
+    blob("arms", arms, mat("skin"), root)
 
     # Head: big round dome, ears and a bulbous nose all melted together.
     blob("head", [
@@ -171,61 +101,30 @@ def build():
         ball((0, -0.03, 0.66), 0.17, (1.1, 0.9, 0.6)),  # jowls / chin
         *[ball((s * 0.24, -0.02, 0.78), 0.055, (0.5, 0.9, 1.1)) for s in (-1, 1)],
         ball(on_head(head_c, head_r, 0, -8, 0.0), 0.065, (1.05, 1.0, 0.95)),
-    ], "skin", root)
+    ], mat("skin"), root)
 
     for s in (-1, 1):
         side = "l" if s > 0 else "r"
         eye = on_head(head_c, head_r, s * 17, 8, -0.01)
-        sphere("eye_" + side, eye, 1.0, (0.032, 0.02, 0.046), "eye", root,
-               rot=(0, 0, math.radians(s * 17)), roughness=0.15)
-        sphere("eye_shine_" + side, eye + Vector((s * 0.008, -0.014, 0.016)), 0.011, (1, 1, 1), "shine", root)
+        sphere("eye_" + side, eye, 1.0, (0.032, 0.02, 0.046), mat("eye"), root,
+               rot=(0, 0, math.radians(s * 17)))
+        sphere("eye_shine_" + side, eye + Vector((s * 0.008, -0.014, 0.016)), 0.011, (1, 1, 1), mat("shine"), root)
 
     # Customisable parts.
     blob("brows_bushy", [capsule(on_head(head_c, head_r, s * 8, 19, 0.01), on_head(head_c, head_r, s * 28, 21, 0.0), 0.024)
-                         for s in (-1, 1)], "mustache", root)
+                         for s in (-1, 1)], mat("mustache"), root)
     blob("mustache_pala", [
         *[capsule(on_head(head_c, head_r, s * 4, -18, 0.04), on_head(head_c, head_r, s * 22, -24, 0.0), 0.034)
           for s in (-1, 1)],
         *[capsule(on_head(head_c, head_r, s * 22, -24, 0.0), on_head(head_c, head_r, s * 30, -40, -0.02), 0.026)
           for s in (-1, 1)],
-    ], "mustache", root)
+    ], mat("mustache"), root)
     blob("hair_fringe", [ball(on_head(head_c, head_r, a, 14, -0.035), 0.055, (1, 1, 0.75))
-                         for a in range(100, 261, 16)], "hair", root)
+                         for a in range(100, 261, 16)], mat("hair"), root)
     blob("hat_kasket", [
         ball((0, 0.01, 0.97), 0.25, (1.02, 1.05, 0.4)),
         ball((0, -0.2, 0.93), 0.15, (1.15, 0.65, 0.12), rot=(math.radians(-12), 0, 0)),
-    ], "cap", root)
-
-
-def render_preview(path):
-    scene = bpy.context.scene
-    scene.render.engine = "BLENDER_EEVEE"
-    scene.render.resolution_x = scene.render.resolution_y = 900
-    scene.render.film_transparent = False
-    scene.view_settings.view_transform = "Standard"
-    world = bpy.data.worlds.new("w")
-    world.color = (0.55, 0.5, 0.62)
-    scene.world = world
-    try:
-        bg = world.node_tree.nodes["Background"]
-        bg.inputs["Color"].default_value = (0.55, 0.5, 0.62, 1)
-        bg.inputs["Strength"].default_value = 0.9
-    except (AttributeError, KeyError):
-        pass
-    cam = bpy.data.objects.new("cam", bpy.data.cameras.new("cam"))
-    scene.collection.objects.link(cam)
-    cam.location = (0.9, -2.1, 0.95)
-    cam.rotation_euler = (Vector((0, 0, 0.45)) - cam.location).to_track_quat("-Z", "Y").to_euler()
-    cam.data.lens = 60
-    scene.camera = cam
-    for name, rot, energy in (("key", (50, 0, -35), 3.5), ("rim", (60, 0, 160), 2.0)):
-        light = bpy.data.objects.new(name, bpy.data.lights.new(name, "SUN"))
-        light.data.energy = energy
-        light.data.angle = math.radians(8)
-        light.rotation_euler = [math.radians(a) for a in rot]
-        scene.collection.objects.link(light)
-    scene.render.filepath = path
-    bpy.ops.render.render(write_still=True)
+    ], mat("cap"), root)
 
 
 HEAD_PARTS = ("head", "eye_", "brows_", "mustache_", "hair_", "hat_")
@@ -247,15 +146,13 @@ def group_head():
 
 
 def main():
-    args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+    out = args()
     build()
     group_head()
-    if args:
-        bpy.ops.export_scene.gltf(filepath=args[0], export_format="GLB", export_apply=True, use_visible=True)
-    if len(args) > 1:
-        render_preview(args[1])
-    tris = sum(len(o.data.polygons) for o in bpy.data.objects if o.type == "MESH" and o.visible_get())
-    print("DAYI DONE, faces:", tris)
+    if out:
+        export(out[0])
+    if len(out) > 1:
+        render_preview(out[1])
 
 
 main()

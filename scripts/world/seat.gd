@@ -7,7 +7,8 @@ const RACK_DISTANCE := 0.6
 const CHAIR_DISTANCE := 1.15
 const SEAT_TOP := 0.48
 const EYE := Vector3(0, 1.35, 1.05)
-const GLOVE := Color(0.88, 0.62, 0.48)
+const HANDS := preload("res://assets/models/dayi/hands.glb")
+const HAND_REST := Vector3(0.28, Table.TOP + 0.022, 0.74)
 
 @export var seat_index := 0
 @export var is_local := false
@@ -16,8 +17,10 @@ var rack: Rack
 var head_anchor: Marker3D
 var rack_focus_anchor: Marker3D
 var buddy: Buddy
-## The local player's right glove, which reaches for tiles.
-var glove: MeshInstance3D
+## How this seat's dayı looks (the local player only shows his hands).
+var appearance := Appearance.random()
+## Pivot of the local player's right hand, which reaches for tiles. Fingers point along its -Z.
+var glove: Node3D
 
 
 func _ready() -> void:
@@ -26,6 +29,8 @@ func _ready() -> void:
 	rack.position = Vector3(0, Table.TOP, RACK_DISTANCE)
 	add_child(rack)
 	_build_chair()
+	# Every player gets a glass of tea to the right of his rack.
+	Mat.prop(self, "tea_set", Vector3(0.52, Table.TOP, 0.56), randf() * TAU)
 	if is_local:
 		_build_hands()
 		# Soft fill from behind the player so tile faces are readable under the overhead lamp.
@@ -39,7 +44,7 @@ func _ready() -> void:
 		buddy = Buddy.new()
 		buddy.position = Vector3(0, SEAT_TOP, CHAIR_DISTANCE)
 		add_child(buddy)
-		buddy.setup(Appearance.random())
+		buddy.setup(appearance)
 	head_anchor = _marker(EYE, EYE + Vector3.FORWARD)
 	var rack_centre := rack.position + Vector3(0, 0.08, -0.015)
 	rack_focus_anchor = _marker(rack_centre + Vector3(0, 0.27, 0.34), rack_centre)
@@ -50,13 +55,23 @@ func _build_chair() -> void:
 	Mat.model(self, "plastic_monobloc_chair_01", Vector3(0, 0, CHAIR_DISTANCE + 0.04), PI)
 
 
-# The player's own hands resting on the table edge.
+# The player's own dayı hands resting on the table edge, with his tespih by the left one.
 func _build_hands() -> void:
+	var model: Node3D = HANDS.instantiate()
+	add_child(model)
+	appearance.apply(model)
 	for side in [-1, 1]:
-		var hand := Mat.part(self, Mat.sphere(0.045), GLOVE, Vector3(side * 0.3, Table.TOP + 0.045, 0.72))
-		hand.scale = Vector3(1.0, 0.8, 1.15)
-		if side == 1:
-			glove = hand
+		var pivot := Node3D.new()
+		pivot.position = HAND_REST * Vector3(side, 1, 1)
+		pivot.rotation.y = side * 0.12
+		add_child(pivot)
+		var hand: Node3D = model.find_child("hand_r" if side > 0 else "hand_l", true, false)
+		hand.reparent(pivot, false)
+		hand.transform = Transform3D(Basis(Vector3.UP, PI), Vector3.ZERO) # model fingers point +Z
+		if side > 0:
+			glove = pivot
+	model.queue_free()
+	Mat.prop(self, "tespih", Vector3(-0.5, Table.TOP, 0.6), 0.4)
 
 
 func _marker(pos: Vector3, target: Vector3) -> Marker3D:

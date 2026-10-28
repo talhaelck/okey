@@ -17,7 +17,9 @@
   downloads 1k sets into `assets/polyhaven/<id>/` and adds the CREDITS row. Use them via `Mat.model()` / `Mat.textured()`.
 - Art is made by Claude, not by hand: Blender 5.2.3 LTS lives in `C:\Tools\blender-5.2.3-windows-x64\` and models are
   built by Python scripts in `tools/blender/` (metaballs for organic shapes), exported to `assets/models/`.
-  Rebuild the dayı: `blender -b --factory-startup -P tools/blender/dayi.py -- <abs path>/assets/models/dayi/dayi.glb [preview.png]`.
+  Scripts share helpers in `tools/blender/kit.py` (metaballs, lathe, torus, hand builder, preview render, export).
+  Rebuild: `blender -b --factory-startup -P tools/blender/<dayi|hands>.py -- <abs path>/assets/models/dayi/<name>.glb [preview.png]`,
+  props: `... -P tools/blender/props.py -- <abs path>/assets/models/props [preview.png]` (tea_set, tespih, semaver).
   Always render the preview and look at it after changing a model.
 
 ## Layout
@@ -29,10 +31,12 @@ scripts/world/     rounded_box, mat (materials, Poly Haven textures/models), til
                    seat (monobloc chair), buddy (dayı: procedural breathing, head turn, head shake),
                    room (kahvehane shell, lamps, background tables with regulars, props), flicker (TV light)
 scripts/character/ appearance.gd: dayı colours + optional parts (hat, mustache), random(), apply() to a dayi.glb
-tools/            fetch_polyhaven.py; blender/dayi.py: builds the seated dayı; head parts sit under a "Head" pivot node
+tools/            fetch_polyhaven.py; blender/kit.py + dayi.py (seated dayı, head parts under a "Head" pivot),
+                  hands.py (first-person hands with ring and watch), props.py (Turkish props)
 scripts/play/      hand.gd: local glove, ray picking, drop targets, steal/caught; watcher.gd: opponent glance AI
 scripts/ui/        hud.gd: crosshair, hint, score, flash messages; post_fx.gd: vignette + grain
-assets/            models/dayi/dayi.glb (generated, do not hand-edit), polyhaven/ (CC0 downloads), CREDITS.md
+assets/            models/dayi/{dayi,hands}.glb + models/props/*.glb (generated, do not hand-edit),
+                  polyhaven/ (CC0 downloads), CREDITS.md
 ```
 
 ## Commands
@@ -62,8 +66,11 @@ assets/            models/dayi/dayi.glb (generated, do not hand-edit), polyhaven
   with a modular character creator. The procedural room is a throwaway placeholder.
 - Done: layout pass (1.5 m table, chairs at 1.15 m, eye at 1.35 m; centre pile visible, own rack low and blurred).
 - Done: kahvehane look pass (Poly Haven props/textures, moody lighting, fog, skin subsurface, cloth textures).
-- Next: real dayı hands for the player (still skin-coloured spheres), Turkish props from Blender (ince belli çay
-  bardağı, semaver, tespih), "Yakala!" mechanic, more dayı parts, then the character creator screen.
+- Done: first-person dayı hands (the right one reaches and turns toward the tile), fingered hands on every dayı,
+  higher-resolution dayı mesh, tea sets on every table, tespih by the player's left hand, semaver on the shelf.
+- Realistic humans: MPFB (MakeHuman for Blender, CC0 assets) is the planned route, but installing the extension
+  needs Talha's permission (the auto-mode classifier blocks installing third-party extension code).
+- Next: "Yakala!" mechanic, more dayı parts, character creator screen.
 
 ## Rules
 1. Keep network, camera/visual effects and Okey rules in separate modules (see master.md section 5).

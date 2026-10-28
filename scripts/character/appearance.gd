@@ -3,7 +3,7 @@ extends Resource
 ## What a dayı looks like: colours and which optional parts he wears.
 ## Small enough to save locally and to sync over the network later; the character creator edits one of these.
 
-const SKINS: Array[Color] = [Color(0.96, 0.74, 0.6), Color(0.93, 0.66, 0.5), Color(0.84, 0.57, 0.41), Color(0.68, 0.45, 0.31)]
+const SKINS: Array[Color] = [Color(0.9, 0.72, 0.62), Color(0.86, 0.66, 0.55), Color(0.76, 0.56, 0.44), Color(0.6, 0.43, 0.33)]
 const VESTS: Array[Color] = [Color(0.36, 0.22, 0.15), Color(0.2, 0.32, 0.22), Color(0.17, 0.22, 0.38), Color(0.45, 0.16, 0.17),
 	Color(0.38, 0.38, 0.4)]
 const TROUSERS: Array[Color] = [Color(0.27, 0.28, 0.33), Color(0.33, 0.27, 0.2), Color(0.18, 0.18, 0.2)]
@@ -31,27 +31,31 @@ static func random() -> Appearance:
 	return a
 
 
-## Recolours and shows/hides the parts of an instanced dayi.glb (node names come from tools/blender/dayi.py).
+## Recolours and shows/hides the parts of an instanced dayi.glb or hands.glb (node names come from
+## tools/blender). Parts it does not know (ring, watch, shoes, buttons) keep their Blender materials.
 func apply(model: Node3D) -> void:
 	for mi: MeshInstance3D in model.find_children("*", "MeshInstance3D", true, false):
 		var part := String(mi.name)
-		var source := mi.mesh.surface_get_material(0) as BaseMaterial3D
-		mi.material_override = _material_for(part, _color_for(part, source.albedo_color if source else Color.WHITE))
+		var look := _material_for(part)
+		if look:
+			mi.material_override = look
 		if part.begins_with("hat_"):
 			mi.visible = hat
 		elif part.begins_with("mustache_"):
 			mi.visible = mustache
 
 
-func _material_for(part: String, color: Color) -> Material:
-	if part in ["head", "arms"]:
-		return _skin_material(color)
-	if part in ["vest", "trousers", "atlet"] or part.begins_with("hat_"):
+func _material_for(part: String) -> Material:
+	var kind := part.get_slice("_", 0)
+	if kind in ["head", "arms"] or (kind == "hand" and not part.contains("ring") and not part.contains("watch")):
+		return _skin_material(skin)
+	if kind in ["vest", "trousers", "atlet", "hat"] and not part.contains("button"):
 		# Woven cloth detail that sticks to the body (object-space projection).
-		return Mat.textured("rough_linen", 0.08, color, false, false)
-	if part.begins_with("eye"):
-		return Mat.material(color, 0.15)
-	return Mat.material(color, 0.9 if part.get_slice("_", 0) in ["mustache", "brows", "hair"] else 0.6)
+		var colour := {"vest": vest, "trousers": trousers, "atlet": Color(0.95, 0.94, 0.9), "hat": cap}[kind] as Color
+		return Mat.textured("rough_linen", 0.08, colour, false, false)
+	if kind in ["mustache", "brows", "hair"]:
+		return Mat.material(hair, 0.9)
+	return null
 
 
 static var _skins := {}
@@ -69,17 +73,3 @@ static func _skin_material(color: Color) -> StandardMaterial3D:
 		m.subsurf_scatter_skin_mode = true
 		_skins[key] = m
 	return _skins[key]
-
-
-func _color_for(part: String, fallback: Color) -> Color:
-	if part in ["head", "arms"]:
-		return skin
-	if part == "vest":
-		return vest
-	if part == "trousers":
-		return trousers
-	if part.begins_with("hat_"):
-		return cap
-	if part.begins_with("mustache_") or part.begins_with("brows_") or part.begins_with("hair_"):
-		return hair
-	return fallback
