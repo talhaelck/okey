@@ -10,6 +10,7 @@ const WOOD_DARK := Color(0.34, 0.19, 0.11)
 const FELT := Color(0.16, 0.48, 0.3)
 
 var _pile := Node3D.new()
+var _loose := Node3D.new()
 
 
 func _ready() -> void:
@@ -29,6 +30,7 @@ func _ready() -> void:
 		Toon.part(self, Toon.cylinder(0.03, leg_height, 0.035), WOOD_DARK,
 			Vector3(corner.x * 0.55, leg_height * 0.5, corner.y * 0.55))
 	add_child(_pile)
+	add_child(_loose)
 
 
 ## Face-down draw pile in the middle plus the face-up indicator tile.
@@ -43,12 +45,39 @@ func show_pile(tiles: Array, indicator: Vector2i) -> void:
 		var column := i % COLUMNS
 		var row := floori((i % (COLUMNS * ROWS)) / float(COLUMNS))
 		var tile := TileFactory.create(tiles[i])
+		tile.holder = self
 		tile.basis = Basis(Vector3.RIGHT, PI * 0.5) # face down
 		tile.position = Vector3((column - (COLUMNS - 1) * 0.5) * 0.051, TOP + lying * (layer + 0.5) + 0.0005 * layer,
 			(row - 0.5) * 0.074)
 		_pile.add_child(tile)
 	var shown := TileFactory.create(indicator)
+	shown.holder = self
 	# Face up, readable from seat 0, slightly askew.
 	shown.basis = Basis(Vector3.UP, 0.3) * Basis(Vector3.RIGHT, -PI * 0.5)
 	shown.position = Vector3(0.28, TOP + lying * 0.5, 0.14)
 	_pile.add_child(shown)
+
+
+## Lays a tile face up on the felt at a world point, its numbers upright for someone facing along yaw.
+func put_loose(tile: Tile, point: Vector3, yaw: float) -> void:
+	tile.holder = self
+	tile.reparent(_loose)
+	var local := to_local(point)
+	local.y = TOP + TileFactory.SIZE.z * 0.5
+	tile.slide_to(Transform3D(Basis(Vector3.UP, yaw) * Basis(Vector3.RIGHT, -PI * 0.5), local))
+
+
+func release(tile: Tile) -> int:
+	tile.holder = null
+	return -1
+
+
+## Where a world-space ray meets the felt, or null if it lands outside the playing area.
+func felt_hit(from: Vector3, dir: Vector3) -> Variant:
+	var hit: Variant = Plane(Vector3.UP, TOP).intersects_ray(to_local(from), dir)
+	if hit == null:
+		return null
+	var half := SIZE * 0.5 - RIM - TileFactory.SIZE.y * 0.5
+	if absf(hit.x) > half or absf(hit.z) > half:
+		return null
+	return to_global(hit)

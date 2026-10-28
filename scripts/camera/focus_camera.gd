@@ -34,6 +34,12 @@ func attach_to_seat(seat: Seat) -> void:
 	_rack = seat.rack_focus_anchor
 
 
+## Points the head directly (yaw/pitch in radians, clamped to the usual limits).
+func look(yaw: float, pitch: float) -> void:
+	_yaw = clampf(yaw, -YAW_LIMIT, YAW_LIMIT)
+	_pitch = clampf(pitch, PITCH_MIN, PITCH_MAX)
+
+
 func set_focused(value: bool, instant := false) -> void:
 	focused = value
 	if mouse_control:
@@ -61,8 +67,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_RIGHT:
 			set_focused(not focused)
-		elif event.button_index == MOUSE_BUTTON_LEFT and not focused and mouse_control:
+		elif event.button_index == MOUSE_BUTTON_LEFT and not focused and mouse_control \
+				and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+			get_viewport().set_input_as_handled() # this click is not a grab
 
 
 func _process(_delta: float) -> void:

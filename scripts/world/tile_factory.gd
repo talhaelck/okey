@@ -17,13 +17,15 @@ static var _mesh: ArrayMesh
 static var _font: SystemFont
 
 
-static func create(tile: Vector2i) -> MeshInstance3D:
+static func create(tile: Vector2i) -> Tile:
 	if _mesh == null:
 		_mesh = RoundedBox.build(SIZE, 0.005, 2)
 		_font = SystemFont.new()
 		_font.font_names = PackedStringArray(["Arial Rounded MT Bold", "Arial Black", "Arial"])
 		_font.font_weight = 800
-	var mi := MeshInstance3D.new()
+	var mi := Tile.new()
+	mi.value = tile
+	mi.add_to_group("tiles")
 	mi.mesh = _mesh
 	mi.material_override = Toon.material(BODY, 0.55)
 	var ink: Color = INK[tile.x]
