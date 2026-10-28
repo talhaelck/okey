@@ -11,7 +11,7 @@
 ## Tech
 - **Engine:** Godot 4.7 (GDScript, Forward+). Executable: `C:\Tools\Godot\godot.cmd` (on user PATH as `godot`).
 - Scenes are thin; most geometry is built in code so it stays text-editable. Placeholder art is procedural until real assets replace it.
-- Art is made by Claude, not by hand: Blender 5.2.3 LTS lives in `C:\Toolslender-5.2.3-windows-x64\` and models are
+- Art is made by Claude, not by hand: Blender 5.2.3 LTS lives in `C:\Tools\blender-5.2.3-windows-x64\` and models are
   built by Python scripts in `tools/blender/` (metaballs for organic shapes), exported to `assets/models/`.
   Rebuild the dayı: `blender -b --factory-startup -P tools/blender/dayi.py -- <abs path>/assets/models/dayi/dayi.glb [preview.png]`.
   Always render the preview and look at it after changing a model.
