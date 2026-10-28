@@ -110,3 +110,8 @@ A modular dayı on **one shared skeleton**, so every part works with every anima
 2. **Image to 3D:** convert the concept to a 3D model with Meshy or Tripo. Generate accessories as separate small models.
 3. **Rig and animate:** auto-rig in Mixamo (or Meshy). Use Mixamo animations: Sitting Idle, Sitting Laughing, Sitting Talking, Pointing, Sitting Clap, plus reactions.
 4. **Import:** drop GLB/FBX files into `assets/` (Godot imports FBX natively) and record the source in `assets/CREDITS.md`.
+
+### Detailed design documents
+* [docs/design/101_rules.md](docs/design/101_rules.md): 101 rules and every house rule as a setting with defaults and presets.
+* [docs/design/stealing.md](docs/design/stealing.md): steal zones, visibility log, "Yakala!", "Taş say!", friend mode, hooks for blackout and distractions.
+* [docs/design/screens.md](docs/design/screens.md): main menu, lobby, house-rules settings page, HUD, end of hand, character creator.
