@@ -46,7 +46,11 @@ assets/            models/characters/*.glb, CREDITS.md (license + source for eve
   - Tiles taken from another player's rack are "stolen" until dropped. If a Watcher looks at you meanwhile,
     the tile snaps back, the opponent shakes its head and the HUD shows "YAKALANDIN!".
   - Watchers glance at players every 2.5-6 s, with a short half-turn first. They show a yellow "!" when looking at you.
-- Not yet: Okey rules/turns (Phase 4), multiplayer (Phase 3), sounds, a real sitting pose for standing models.
+- Not yet: Okey rules/turns (Phase 4), multiplayer (Phase 3), sounds.
+- **Direction changed (see master.md section 6):** 101 Okey, "Yakala!" key instead of automatic catching, kahvehane dayıları
+  with a modular character creator. The current animal characters and procedural room are throwaway placeholders.
+- Next: camera/layout pass (own rack low on screen, centre pile and discards clearly visible), "Yakala!" mechanic,
+  then swap in the AI-generated dayı base once Talha delivers it.
 
 ## Rules
 1. Keep network, camera/visual effects and Okey rules in separate modules (see master.md section 5).

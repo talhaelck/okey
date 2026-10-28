@@ -78,3 +78,35 @@ When writing code or building architecture for this repository:
 2. **Prioritize Physics & Feel:** Interaction responsiveness is key. Ensure grabbing felt physics-based yet snappy.
 3. **Shader Efficiency:** Keep post-processing blur optimized for middle-range hardware.
 4. **Step-by-Step Implementation:** Do not attempt full game logic in a single turn. Always write functional, testable scripts per module (e.g., Camera Controller first, then Interaction Raycaster, then Multiplayer Sync).
+---
+
+## 6. Decisions (2026-10-29)
+
+### Game rules
+* **Variant:** 101 Okey (point-based, 101-point penalties). Classic okey may come later as a mode.
+* **Catching thieves is a player action, not automatic.** Look at the thief and press the **"Yakala!"** key.
+  * Valid only while the stolen tile is still in the thief's hand or was taken within the last few seconds.
+  * Correct call: the tile returns to its owner and the thief gets a **101 penalty**.
+  * Wrong call: the accuser gets the penalty, so nobody spams the key.
+* **"Arkadaş modu"** (lobby option): the game never applies penalties. It only announces "X taş çalarken görüldü!" to everyone and players settle it themselves.
+* Bots use the same rule: they must "see" you, then they call "Yakala!".
+
+### Art direction: Turkish kahvehane (coffeehouse)
+* Players are cute, stylized **kahvehane dayıları** (coffeehouse uncles). Chunky, round, Bombanana-like proportions. No animal characters.
+* Room is a cozy kahvehane: green-felt okey tables, hasır (wicker) chairs, ince belli çay bardağı, semaver, old TV, wall clock, calendar, signboard.
+* No smoking props.
+
+### Character creator (skins)
+A modular dayı on **one shared skeleton**, so every part works with every animation (Mixamo humanoid rig):
+1. **Base body:** 2-3 body types (göbekli, zayıf, iri) with the same rig, plus a skin tone parameter.
+2. **Head attachments** (BoneAttachment3D on the head bone, static meshes): bıyık types, sakal, hair or bald, kasket/şapka/takke, gözlük.
+3. **Hand attachments:** tespih, çay bardağı.
+4. **Outfit:** first as material/colour/pattern variants (yelek, gömlek, hırka), later as separate skinned outfit meshes.
+* An appearance is just a small set of item ids plus colours (`CharacterAppearance` resource, saved locally). Multiplayer later only syncs these ids.
+* Creator screen: rotating 3D dayı preview in the kahvehane, category tabs (Yüz, Bıyık, Şapka, Kıyafet, Aksesuar), arrows and colour swatches, and a "Rastgele dayı" button. Bots get random appearances.
+
+### Asset pipeline (AI-generated)
+1. **Concept image:** generate a front-view, A-pose dayı with an image AI. Keep the base bald, clean-shaven and without accessories so parts stay separate.
+2. **Image to 3D:** convert the concept to a 3D model with Meshy or Tripo. Generate accessories as separate small models.
+3. **Rig and animate:** auto-rig in Mixamo (or Meshy). Use Mixamo animations: Sitting Idle, Sitting Laughing, Sitting Talking, Pointing, Sitting Clap, plus reactions.
+4. **Import:** drop GLB/FBX files into `assets/` (Godot imports FBX natively) and record the source in `assets/CREDITS.md`.
