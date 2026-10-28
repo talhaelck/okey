@@ -40,6 +40,7 @@ assets/            models/dayi/dayi.glb (generated, do not hand-edit), CREDITS.m
 
 ## Setup on a new machine
 - Install Godot **4.7.2 standard (not .NET)** from https://godotengine.org. Either unzip to `C:\Tools\Godot\` (matches `oyna.cmd` and `.mcp.json`) or put `godot` on PATH and edit `GODOT_PATH` in `.mcp.json`.
+- To change models, also unzip Blender 5.2.3 LTS (https://download.blender.org/release/Blender5.2/) to `C:\Tools\`.
 - First run: `godot --path . --headless --import`, then `.\oyna.cmd`.
 
 ## Status (2026-10-29)
