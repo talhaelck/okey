@@ -84,7 +84,7 @@ func _capture(args: Dictionary) -> void:
 	var path: String = args["screenshot"]
 	camera.mouse_control = false
 	camera.set_focused(args.has("focus"), true)
-	camera.look(float(args.get("yaw", "0")), float(args.get("pitch", "-0.35")))
+	camera.look(float(args.get("yaw", "0")), float(args.get("pitch", "-0.15")))
 	hand.aim_override = get_viewport().get_visible_rect().size * Vector2(0.55, 0.42)
 	if args.has("hold"):
 		hand.grab(get_tree().get_nodes_in_group("tiles").filter(func(t: Tile) -> bool: return t.holder == seats[0].rack)[0])

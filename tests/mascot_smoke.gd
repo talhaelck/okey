@@ -17,6 +17,25 @@ func _run() -> void:
 	for watcher: Watcher in main.watchers:
 		watcher.set_process(false)
 	_check(get_nodes_in_group("tiles").size() == 106, "All 106 tiles are still dealt/spawned")
+	var hand: Hand = main.hand
+	var eye: Vector3 = main.camera.global_position
+	var pile_reachable := false
+	for tile: Tile in get_nodes_in_group("tiles"):
+		if tile.holder == main.table:
+			var picked := hand._pick(eye, (tile.global_position-eye).normalized())
+			if picked != null and picked.holder == main.table:
+				pile_reachable = true
+				break
+	_check(pile_reachable, "Draw pile is reachable from the wider observation camera")
+	for side_index in [1,3]:
+		var reachable := false
+		for tile: Tile in get_nodes_in_group("tiles"):
+			if tile.holder == main.seats[side_index].rack:
+				var picked := hand._pick(eye,(tile.global_position-eye).normalized())
+				if picked != null and picked.holder == main.seats[side_index].rack:
+					reachable = true
+					break
+		_check(reachable, "Side rack %d remains within stealing reach" % side_index)
 	var expected := ["bunny", "panda", "dinosaur"]
 	for i in 3:
 		var seat: Seat = main.seats[i + 1]
@@ -48,6 +67,32 @@ func _run() -> void:
 		_check(mascot._eyes[0].scale.y < 0.1, "Eyelids close during a blink")
 		mascot._process(0.2)
 		_check(is_equal_approx(mascot._eyes[0].scale.y, 1.0), "Eyes reopen after blinking")
+	# Exercise real stealing and catching through Hand, not just visual reactions.
+	for watcher: Watcher in main.watchers:
+		watcher._set_state(Watcher.State.RACK,10.0)
+	var stolen_tile: Tile
+	for tile: Tile in get_nodes_in_group("tiles"):
+		if tile.holder == main.seats[3].rack:
+			stolen_tile = tile
+			break
+	hand.grab(stolen_tile)
+	hand._drop = {"rack": main.seats[0].rack, "slot": main.seats[0].rack.nearest_free(0)}
+	hand.drop()
+	_check(hand.held == null and stolen_tile.holder == main.seats[0].rack, "Stolen tile can be placed on the local rack")
+	_check(main.stolen == 1, "Successful steal updates the redesigned HUD")
+	var foreign: Tile
+	for tile: Tile in get_nodes_in_group("tiles"):
+		if tile.holder == main.seats[1].rack:
+			foreign = tile
+			break
+	hand.grab(foreign)
+	_check(hand.held == foreign, "Hand can hold a stolen tile")
+	main.watchers[0].target = main.seats[0]
+	main.watchers[0]._set_state(Watcher.State.LOOK,2.0)
+	hand._check_caught()
+	_check(hand.held == null and foreign.holder == main.seats[1].rack, "Caught tile returns to its original rack")
+	_check(main.caught == 1, "Caught event updates the redesigned HUD")
+	_check(get_nodes_in_group("tiles").size() == 106, "Stealing/catching preserves the full tile set")
 	# Existing imported characters are still supported by Buddy's public API.
 	var legacy := Buddy.new()
 	root.add_child(legacy)

@@ -7,6 +7,11 @@ Every third-party asset must be listed here with its source and license (CC0 or 
 | Rabbit (`rabbit.glb`, `rabbit_Sushi_Atlas.png`) by Quaternius | models/characters | https://poly.pizza/m/mKev485XTR | CC0 |
 | Animated Platformer Character (`blue_buddy.glb`) by Quaternius | models/characters | https://poly.pizza/m/kKtL4zvS3n | CC0 |
 | Cactoro (`cactoro.glb`) by Quaternius | models/characters | https://poly.pizza/m/66CYX5UhRK | CC0 |
+| Wood Table Worn (diffuse, OpenGL normal, roughness) by Poly Haven | textures/wood_table_worn | https://polyhaven.com/a/wood_table_worn | CC0; https://polyhaven.com/license |
+| Worn Plaster Wall (diffuse, OpenGL normal, roughness) by Poly Haven | textures/worn_plaster_wall | https://polyhaven.com/a/worn_plaster_wall | CC0; https://polyhaven.com/license |
+
+Texture discovery: Powered by Poly Haven (https://polyhaven.com), via its public asset API.
+The game loads the downloaded textures locally and makes no network requests.
 
 ## Authored mascots
 

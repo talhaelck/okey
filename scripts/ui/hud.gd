@@ -11,25 +11,48 @@ var _font := SystemFont.new()
 
 
 func _ready() -> void:
-	_font.font_names = PackedStringArray(["Arial Rounded MT Bold", "Arial Black", "Arial"])
-	_font.font_weight = 800
+	_font.font_names = PackedStringArray(["Segoe UI", "Arial"])
+	_font.font_weight = 500
 
 	_crosshair.set_anchors_preset(Control.PRESET_CENTER)
 	_crosshair.draw.connect(func() -> void:
-		_crosshair.draw_circle(Vector2.ZERO, 5.0, Color(0, 0, 0, 0.45))
-		_crosshair.draw_circle(Vector2.ZERO, 3.5, Color(1, 1, 1, 0.95)))
+		_crosshair.draw_circle(Vector2.ZERO, 3.0, Color(0, 0, 0, 0.3))
+		_crosshair.draw_circle(Vector2.ZERO, 1.5, Color(0.92, 0.85, 0.67, 0.7)))
 	add_child(_crosshair)
 
 	# Centred labels span the screen; equal top/bottom offsets shift them up or down from the middle.
-	_label(_hint, 22, Vector4(0, 0, 1, 1), Vector4(0, 100, 0, 100))
-	_label(_score, 24, Vector4(0, 0, 0, 0), Vector4(20, 16, 700, 60))
-	_score.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	var title := Label.new()
+	_label(title, 23, Vector4(0,0,0,0), Vector4(30,21,320,55))
+	title.text = "S N E A K Y   O K E Y"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	var subtitle := Label.new()
+	_label(subtitle, 11, Vector4(0,0,0,0), Vector4(32,55,400,76))
+	subtitle.text = "SON EL  /  GECE KAHVEHANESİ"
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	subtitle.modulate = Color("c2a879")
+	_label(_hint, 17, Vector4(0, 1, 1, 1), Vector4(0, -125, 0, -95))
+	_label(_score, 14, Vector4(1, 0, 1, 0), Vector4(-400, 28, -32, 60))
+	_score.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_score.modulate = Color("dacbb2")
+	var footer := Panel.new()
+	footer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	footer.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	footer.offset_left = 26
+	footer.offset_right = -26
+	footer.offset_top = -57
+	footer.offset_bottom = -20
+	var panel := StyleBoxFlat.new()
+	panel.bg_color = Color(0.03,0.025,0.02,0.72)
+	panel.border_color = Color(0.65,0.52,0.32,0.2)
+	panel.set_border_width_all(1)
+	panel.set_corner_radius_all(5)
+	footer.add_theme_stylebox_override("panel", panel)
+	add_child(footer)
 	var help := Label.new()
-	_label(help, 16, Vector4(0, 1, 1, 1), Vector4(20, -40, 0, -12))
-	help.text = "Fare: etrafa bak    Space / Sağ tık: ıstakaya odaklan    Sol tık: taş al / bırak    Esc: fareyi bırak"
-	help.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	help.modulate.a = 0.8
-	_label(_flash, 64, Vector4(0, 0, 1, 1), Vector4(0, -150, 0, -150))
+	_label(help, 13, Vector4(0, 1, 1, 1), Vector4(30, -54, -30, -23))
+	help.text = "FARE  Etrafa bak     ·     SPACE / SAĞ TIK  Istakana odaklan     ·     SOL TIK  Taş al / bırak     ·     ESC  Fareyi bırak"
+	help.modulate = Color("c9bfab")
+	_label(_flash, 42, Vector4(0, 0, 1, 1), Vector4(0, -150, 0, -150))
 	_flash.modulate.a = 0.0
 
 	set_score(0, 0)
@@ -44,7 +67,7 @@ func set_hint(text: String) -> void:
 
 
 func set_score(stolen: int, caught: int) -> void:
-	_score.text = "Çalınan taş: %d     Yakalanma: %d" % [stolen, caught]
+	_score.text = "ÇALINAN  %02d      /      YAKALANMA  %02d" % [stolen, caught]
 
 
 ## Big centred message that pops in and fades out.
@@ -67,8 +90,12 @@ func _label(label: Label, font_size: int, anchors: Vector4, offsets: Vector4) ->
 	var settings := LabelSettings.new()
 	settings.font = _font
 	settings.font_size = font_size
-	settings.outline_size = maxi(4, font_size / 5)
-	settings.outline_color = Color(0.1, 0.06, 0.15)
+	settings.font_color = Color("ece4d4")
+	settings.outline_size = 1
+	settings.outline_color = Color(0.025, 0.02, 0.015, 0.7)
+	settings.shadow_color = Color(0,0,0,0.65)
+	settings.shadow_size = 3
+	settings.shadow_offset = Vector2(0,2)
 	label.label_settings = settings
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER

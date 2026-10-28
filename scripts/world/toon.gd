@@ -1,5 +1,5 @@
 class_name Toon
-## Shared toon-style materials and a helper for spawning simple mesh parts.
+## Shared physically shaded base materials and mesh helpers (legacy name retained).
 
 static var _materials := {}
 
@@ -10,11 +10,9 @@ static func material(color: Color, roughness := 0.85) -> StandardMaterial3D:
 		var m := StandardMaterial3D.new()
 		m.albedo_color = color
 		m.roughness = roughness
-		m.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
-		m.specular_mode = BaseMaterial3D.SPECULAR_TOON
-		m.rim_enabled = true
-		m.rim = 0.3
-		m.rim_tint = 0.6
+		m.diffuse_mode = BaseMaterial3D.DIFFUSE_BURLEY
+		m.specular_mode = BaseMaterial3D.SPECULAR_SCHLICK_GGX
+		m.metallic_specular = 0.3
 		_materials[key] = m
 	return _materials[key]
 

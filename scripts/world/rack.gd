@@ -20,14 +20,22 @@ var _slots: Array[Tile] = []
 
 
 func _ready() -> void:
-	Toon.part(self, RoundedBox.build(Vector3(LENGTH, 0.014, 0.1), 0.005), WOOD_DARK, Vector3(0, 0.007, 0))
-	var board := Toon.part(self, RoundedBox.build(Vector3(LENGTH, HEIGHT, 0.018), 0.006), WOOD,
+	var walnut := SurfaceStyle.textured(Color("64432a"), SurfaceStyle.Kind.WOOD, 0.47)
+	var dark := SurfaceStyle.textured(Color("39281c"), SurfaceStyle.Kind.WOOD, 0.6)
+	SurfaceStyle.part(self, RoundedBox.build(Vector3(LENGTH, 0.014, 0.1), 0.005), dark, Vector3(0, 0.007, 0))
+	var board := SurfaceStyle.part(self, RoundedBox.build(Vector3(LENGTH, HEIGHT, 0.018), 0.006), walnut,
 		_board_origin + _board.y * HEIGHT * 0.5 - _board.z * 0.009)
 	board.basis = _board
 	for row in ROWS:
-		var lip := Toon.part(self, RoundedBox.build(Vector3(LENGTH, 0.01, 0.03), 0.004), WOOD_DARK,
+		var lip := SurfaceStyle.part(self, RoundedBox.build(Vector3(LENGTH, 0.01, 0.03), 0.004), dark,
 			_board_origin + _board.y * (_row_bottom(row) - 0.005) + _board.z * 0.015)
 		lip.basis = _board
+	var crest := SurfaceStyle.lettering(self, "S E", _board_origin + _board.y * 0.105 - _board.z * 0.020, 36, 0.0012, Color("b89a61"))
+	crest.basis = _board * Basis(Vector3.UP, PI)
+	for side in [-1,1]:
+		for y in [0.03,0.15]:
+			var pin := SurfaceStyle.part(self, Toon.sphere(0.0025), SurfaceStyle.metal(), _board_origin + Vector3(side*0.374,0,0) + _board.y*y + _board.z*0.002)
+			pin.scale.z = 0.35
 	add_child(_tiles)
 	_slots.resize(ROWS * SLOTS)
 

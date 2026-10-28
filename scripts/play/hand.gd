@@ -8,7 +8,7 @@ extends Node3D
 signal stole
 signal caught(by: Watcher)
 
-const REACH := 1.35
+const REACH := 1.65 # Keeps the draw pile and side racks reachable from the wider camera framing.
 const FOLLOW := 18.0
 const CARRY_DISTANCE := 0.4
 const RACK_LIFT := 0.025

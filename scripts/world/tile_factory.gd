@@ -5,13 +5,13 @@ class_name TileFactory
 const SIZE := Vector3(0.048, 0.07, 0.019)
 const FAKE_OKEY := 4
 const INK := [
-	Color(0.86, 0.16, 0.18), # red
-	Color(0.1, 0.1, 0.12), # black
-	Color(0.1, 0.38, 0.86), # blue
-	Color(0.95, 0.62, 0.05), # yellow
-	Color(0.16, 0.55, 0.3), # fake okey
+	Color("a92e2b"), # red
+	Color("16191b"), # black
+	Color("214c8a"), # blue
+	Color("8e590d"), # golden yellow, dark enough to read on ivory
+	Color("286243"), # fake okey
 ]
-const BODY := Color(0.98, 0.95, 0.86)
+const BODY := Color("e5dcc2")
 
 static var _mesh: ArrayMesh
 static var _font: SystemFont
@@ -27,7 +27,7 @@ static func create(tile: Vector2i) -> Tile:
 	mi.value = tile
 	mi.add_to_group("tiles")
 	mi.mesh = _mesh
-	mi.material_override = Toon.material(BODY, 0.55)
+	mi.material_override = Toon.material(BODY, 0.32)
 	var ink: Color = INK[tile.x]
 	if tile.x == FAKE_OKEY:
 		mi.add_child(_print("★", ink, 72, Vector3(0, 0.0, 0)))

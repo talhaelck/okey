@@ -19,7 +19,8 @@ scenes/            main.tscn (entry), table.tscn, seat.tscn
 scripts/main.gd    deals tiles, wires camera/hand/watchers/HUD, debug screenshot mode
 scripts/camera/    focus_camera.gd: observe/rack modes + depth-of-field blur
 scripts/world/     rounded_box, toon (materials), tile + tile_factory, rack (2x15 slots), table (pile, loose tiles),
-                   seat, buddy (mascot/legacy glTF adapter), mascot_character (procedural seated characters), room
+                   seat, buddy (mascot/legacy glTF adapter), mascot_character (procedural seated characters),
+                   coffeehouse (active room), cafe_props, surface_style; room is the legacy prototype
 scripts/play/      hand.gd: local glove, ray picking, drop targets, steal/caught; watcher.gd: opponent glance AI
 scripts/ui/        hud.gd: crosshair, hint, score, flash messages (built in code)
 assets/            models/characters/*.glb, CREDITS.md (license + source for every asset)
@@ -41,12 +42,18 @@ assets/            models/characters/*.glb, CREDITS.md (license + source for eve
 - Done: Phase 1 (room, table, seats, racks, tiles, deal, observe/rack camera with depth-of-field blur).
 - Done: Phase 2 single-player demo.
   - Opponents are medium-build seated mascots: `bunny`, `panda`, `dinosaur` (`character` / `character_height` on each Seat in main.tscn). Their heads turn independently of their bodies; breathing, blinking and caught-thief head shakes are procedural. Legacy CC0 Quaternius filenames still work.
-  - Left click grabs/drops: aim with the crosshair in observe mode, with the mouse in rack mode. Reach is 1.35 m.
+  - Left click grabs/drops: aim with the crosshair in observe mode, with the mouse in rack mode. Reach is 1.65 m, adjusted for the wider 1.30 m camera position.
   - Drops go to the nearest free slot on any rack, or loose on the felt.
   - Tiles taken from another player's rack are "stolen" until dropped. If a Watcher looks at you meanwhile,
     the tile snaps back, the opponent shakes its head and the HUD shows "YAKALANDIN!".
   - Watchers glance at players every 2.5-6 s, with a short half-turn first. They show a yellow "!" when looking at you.
-- Not yet: Okey rules/turns (Phase 4), multiplayer (Phase 3), sounds, a real sitting pose for standing models.
+- Not yet: Okey rules/turns (Phase 4), multiplayer (Phase 3), sounds. The three authored mascots have seated poses; legacy imported models retain their original animation choices.
+
+## Son El visual direction
+- Original late-night coffeehouse: warm practical lights, cool rainy windows, walnut/brass furniture, tea service and worn plaster. The Liar's Bar reference is a mood/quality reference, not a source of game assets.
+- `SurfaceStyle` loads local CC0 Poly Haven PBR scans for wood/plaster. Keep their `.import` settings: GPU compression, mipmaps and normal-map handling are intentional.
+- Clothing, fur, scales and felt use `assets/shaders/tactile.gdshader`. Preserve the shader's derivative antialiasing for fine weave details.
+- Main graphics use Forward+, 4x MSAA, SSAO/SSIL, light volumetric fog and a subtle vignette. Keep the camera/interaction integration tests passing when adjusting framing.
 
 ## Rules
 1. Keep network, camera/visual effects and Okey rules in separate modules (see master.md section 5).

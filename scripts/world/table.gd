@@ -1,6 +1,6 @@
 class_name Table
 extends Node3D
-## Square okey table: green felt, raised wooden rim, centre draw pile.
+## Walnut okey table with inset felt, brass details and a center draw pile.
 
 const TOP := 0.75 # height of the felt surface
 const SIZE := 1.3
@@ -15,20 +15,28 @@ var _loose := Node3D.new()
 
 func _ready() -> void:
 	var felt := SIZE - RIM * 2.0
-	Toon.part(self, RoundedBox.build(Vector3(SIZE, 0.05, SIZE), 0.02), WOOD, Vector3(0, TOP - 0.035, 0))
-	Toon.part(self, RoundedBox.build(Vector3(felt, 0.01, felt), 0.003), FELT, Vector3(0, TOP - 0.005, 0), 1.0)
+	var walnut := SurfaceStyle.textured(Color("68472f"), SurfaceStyle.Kind.WOOD, 0.5)
+	var dark := SurfaceStyle.textured(Color("33251d"))
+	var brass := SurfaceStyle.metal(Color("a1824e"), 0.45)
+	SurfaceStyle.box(self, Vector3(SIZE+0.14,0.075,SIZE+0.14), Vector3(0,TOP-0.042,0), walnut, 0.025)
+	SurfaceStyle.box(self, Vector3(felt,0.012,felt), Vector3(0,TOP-0.005,0), SurfaceStyle.textured(Color("25473b"), SurfaceStyle.Kind.FABRIC, 0.94), 0.006)
 	for side in 4:
-		# Pinwheel layout so the four rim pieces never overlap at the corners.
 		var pivot := Node3D.new()
 		pivot.rotation.y = side * PI * 0.5
 		add_child(pivot)
-		Toon.part(pivot, RoundedBox.build(Vector3(SIZE - RIM, 0.03, RIM), 0.012), WOOD,
-			Vector3(RIM * 0.5, TOP + 0.005, (SIZE - RIM) * 0.5))
-	Toon.part(self, RoundedBox.build(Vector3(SIZE - 0.12, 0.08, SIZE - 0.12), 0.015), WOOD_DARK, Vector3(0, TOP - 0.1, 0))
+		SurfaceStyle.box(pivot, Vector3(1.30,0.035,0.14), Vector3(0.07,TOP+0.004,0.65), walnut, 0.012)
+		SurfaceStyle.box(pivot, Vector3(1.30,0.005,0.003), Vector3(0.07,TOP+0.024,0.603), brass, 0.001)
+		# Fine stitched edge sits flush with the cloth, outside all drop slots.
+		for i in 42:
+			SurfaceStyle.box(pivot, Vector3(0.012,0.001,0.001), Vector3((i-20.5)*0.025,TOP+0.002,0.553), Toon.material(Color("8a8864")), 0.0003)
+	SurfaceStyle.box(self, Vector3(SIZE,0.13,SIZE), Vector3(0,TOP-0.13,0), dark, 0.02)
 	for corner in [Vector2(-1, -1), Vector2(1, -1), Vector2(1, 1), Vector2(-1, 1)]:
-		var leg_height := TOP - 0.06
-		Toon.part(self, Toon.cylinder(0.03, leg_height, 0.035), WOOD_DARK,
-			Vector3(corner.x * 0.55, leg_height * 0.5, corner.y * 0.55))
+		SurfaceStyle.part(self, SurfaceStyle.lathe([Vector2(0.035,0),Vector2(0.04,0.05),Vector2(0.029,0.13),Vector2(0.036,0.42),Vector2(0.06,0.54),Vector2(0.055,0.65)]), dark, Vector3(corner.x*0.57,0,corner.y*0.57))
+		SurfaceStyle.part(self, Toon.cylinder(0.025,0.002), brass, Vector3(corner.x*0.65,TOP+0.023,corner.y*0.65))
+	CafeProps.tea(self, Vector3(-0.64,TOP+0.023,0.60), true)
+	CafeProps.tea(self, Vector3(0.64,TOP+0.023,-0.60))
+	SurfaceStyle.box(self, Vector3(0.22,0.045,0.004), Vector3(0,TOP-0.038,0.723), brass, 0.005)
+	SurfaceStyle.lettering(self, "SON EL  /  04", Vector3(0,TOP-0.038,0.727), 26, 0.0007, Color("372c1b"))
 	add_child(_pile)
 	add_child(_loose)
 

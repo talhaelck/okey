@@ -21,23 +21,25 @@ var _blink_time := -1.0
 var _reaction := 0.0
 var _look_yaw := 0.0
 var _look_tween: Tween
+var _species := ""
 
 
 func build(kind: String, height: float) -> void:
 	assert(kind in KINDS, "Unknown mascot: " + kind)
 	name = kind.capitalize()
+	_species = kind
 	_time = randf() * TAU
 	_blink_wait = randf_range(1.5, 4.5)
-	var fur := Color("fff2df")
-	var hoodie := Color("7e944b")
+	var fur := Color("e5dccb")
+	var hoodie := Color("647446")
 	var shorts := Color("333b30")
 	if kind == "bunny":
-		fur = Color("fff0e5")
-		hoodie = Color("ef8c9b")
-		shorts = Color("d8637d")
+		fur = Color("e8dcd4")
+		hoodie = Color("ba6b79")
+		shorts = Color("814657")
 	elif kind == "dinosaur":
-		fur = Color("88a958")
-		hoodie = Color("efb83e")
+		fur = Color("789150")
+		hoodie = Color("c79638")
 		shorts = Color("526a3b")
 	add_child(torso)
 	torso.name = "BreathingTorso"
@@ -49,6 +51,7 @@ func build(kind: String, height: float) -> void:
 		_build_dinosaur(fur)
 	else:
 		_build_mammal(kind, fur)
+	head.scale = Vector3(0.97, 0.95, 0.97)
 	var natural_height := 1.21 if kind == "bunny" else 0.99
 	scale = Vector3.ONE * height / natural_height
 
@@ -119,6 +122,9 @@ func _build_body(kind: String, fur: Color, hoodie: Color, shorts: Color) -> void
 		var paw_color := INK if kind == "panda" else fur
 		_ellipsoid(torso, "Paw", Vector3(side * 0.27, 0.27, -0.285), Vector3(0.067, 0.054, 0.075), paw_color)
 		_ellipsoid(torso, "Thumb", Vector3(side * 0.22, 0.275, -0.287), Vector3(0.027, 0.031, 0.038), paw_color)
+		_curve(torso, "FabricFold", [Vector3(side*0.16,0.19,-0.127),Vector3(side*0.19,0.23,-0.11),Vector3(side*0.19,0.27,-0.106)], 0.003, hoodie.darkened(0.15))
+		var stitch := SurfaceStyle.ring(torso, 0.061, 0.0018, Vector3(side*0.27,0.275,-0.241), SurfaceStyle.textured(hoodie.lightened(0.20), SurfaceStyle.Kind.FABRIC))
+		stitch.rotation.x = PI/2.0
 	# A small embroidered paw emblem on the chest.
 	_ellipsoid(torso, "PawEmblem", Vector3(-0.115, 0.35, -0.155), Vector3(0.019, 0.015, 0.004), CREAM)
 	for i in 3:
@@ -147,7 +153,7 @@ func _build_mammal(kind: String, fur: Color) -> void:
 			_ellipsoid(ear, "LongEar", Vector3(0, 0.14, 0), Vector3(0.069, 0.215, 0.048), fur)
 			_ellipsoid(ear, "PinkInnerEar", Vector3(0, 0.15, -0.038), Vector3(0.043, 0.17, 0.017), Color("e99a9f"))
 			_ears.append(ear)
-		_eye(head, Vector3(side * 0.095, 0.012, -0.214 if kind == "panda" else -0.187), 0.052)
+		_eye(head, Vector3(side * 0.095, 0.012, -0.214 if kind == "panda" else -0.187), 0.048, INK if kind == "panda" else fur)
 		_ellipsoid(head, "Blush", Vector3(side * 0.166, -0.065, -0.163), Vector3(0.038, 0.022, 0.009), Color("efb5a0") if kind == "panda" else Color("f2b0b3"))
 		_curve(head, "Eyebrow", [Vector3(side * 0.067, 0.119, -0.171), Vector3(side * 0.091, 0.13, -0.167), Vector3(side * 0.12, 0.12, -0.157)], 0.009, INK if kind == "panda" else Color("996754"))
 	# A small open smile sits behind the two muzzle lobes.
@@ -174,7 +180,7 @@ func _build_dinosaur(fur: Color) -> void:
 	_ellipsoid(head, "Tongue", Vector3(0, -0.099, -0.241), Vector3(0.041, 0.014, 0.01), Color("dc9290"))
 	_ellipsoid(head, "RoundSnout", Vector3(0, -0.025, -0.17), Vector3(0.203, 0.09, 0.13), fur.lightened(0.08))
 	for side in [-1.0, 1.0]:
-		_eye(head, Vector3(side * 0.101, 0.086, -0.157), 0.052)
+		_eye(head, Vector3(side * 0.101, 0.086, -0.157), 0.048, fur)
 		_ellipsoid(head, "Nostril", Vector3(side * 0.102, 0.003, -0.284), Vector3(0.012, 0.009, 0.005), fur.darkened(0.45))
 		_ellipsoid(head, "Blush", Vector3(side * 0.183, -0.023, -0.176), Vector3(0.031, 0.023, 0.009), Color("d9ad6f"))
 		_ellipsoid(head, "LittleTooth", Vector3(side * 0.079, -0.079, -0.249), Vector3(0.017, 0.018, 0.012), WHITE)
@@ -197,7 +203,7 @@ func _build_tail(fur: Color) -> void:
 	_ellipsoid(self, "TailTip", points[-1], Vector3(0.026, 0.04, 0.026), fur)
 
 
-func _eye(parent: Node3D, pos: Vector3, radius: float) -> void:
+func _eye(parent: Node3D, pos: Vector3, radius: float, lid: Color) -> void:
 	var eye := Node3D.new()
 	eye.name = "BlinkingEye"
 	eye.position = pos
@@ -210,6 +216,11 @@ func _eye(parent: Node3D, pos: Vector3, radius: float) -> void:
 	_ellipsoid(eye, "Pupil", Vector3(0, 0, -radius * 0.65), Vector3(radius * 0.49, radius * 0.70, radius * 0.15), Color("171c20"), 0.19)
 	_ellipsoid(eye, "Catchlight", Vector3(-radius * 0.21, radius * 0.34, -radius * 0.79), Vector3(radius * 0.20, radius * 0.23, radius * 0.055), WHITE, 0.15)
 	_ellipsoid(eye, "SmallCatchlight", Vector3(radius * 0.22, -radius * 0.30, -radius * 0.78), Vector3(radius * 0.085, radius * 0.095, radius * 0.04), WHITE)
+	var eyelid: Array[Vector3] = []
+	for i in 9:
+		var angle := PI * (0.06 + float(i)/8.0*0.88)
+		eyelid.append(Vector3(cos(angle)*radius*0.99, sin(angle)*radius*1.16, -radius*0.2))
+	_curve(eye, "Eyelid", eyelid, radius*0.095, lid)
 
 
 static func _material(color: Color, roughness: float) -> StandardMaterial3D:
@@ -228,12 +239,12 @@ static func _ellipsoid(parent: Node3D, label: String, pos: Vector3, size: Vector
 		_sphere_mesh = SphereMesh.new()
 		_sphere_mesh.radius = 1.0
 		_sphere_mesh.height = 2.0
-		_sphere_mesh.radial_segments = 24
-		_sphere_mesh.rings = 16
+		_sphere_mesh.radial_segments = 48
+		_sphere_mesh.rings = 24
 	var part := MeshInstance3D.new()
 	part.name = label
 	part.mesh = _sphere_mesh
-	part.material_override = _material(color, roughness)
+	part.material_override = _appearance(parent, label, color, roughness)
 	part.position = pos
 	part.scale = size
 	parent.add_child(part)
@@ -247,7 +258,51 @@ static func _segment(parent: Node3D, label: String, from: Vector3, to: Vector3, 
 
 
 static func _curve(parent: Node3D, label: String, points: Array[Vector3], radius: float, color: Color) -> void:
-	for i in points.size() - 1:
-		_segment(parent, label, points[i], points[i + 1], radius, color)
-	for point in points:
-		_ellipsoid(parent, label, point, Vector3.ONE * radius, color)
+	# A continuous swept tube replaces the old chain of visibly separate beads.
+	var path: Array[Vector3] = []
+	for i in points.size()-1:
+		var p0 := points[maxi(0,i-1)]
+		var p1 := points[i]
+		var p2 := points[i+1]
+		var p3 := points[mini(points.size()-1,i+2)]
+		for sample in 4:
+			var t := sample/4.0
+			path.append(0.5*((2*p1)+(-p0+p2)*t+(2*p0-5*p1+4*p2-p3)*t*t+(-p0+3*p1-3*p2+p3)*t*t*t))
+	path.append(points[-1])
+	var vertices: Array[Vector3] = []
+	var normals: Array[Vector3] = []
+	const SIDES := 8
+	for i in path.size():
+		var tangent := (path[mini(i+1,path.size()-1)]-path[maxi(i-1,0)]).normalized()
+		var basis := Basis.looking_at(tangent, Vector3.RIGHT if absf(tangent.dot(Vector3.UP))>0.95 else Vector3.UP)
+		for k in SIDES:
+			var normal := basis.x*cos(TAU*k/SIDES)+basis.y*sin(TAU*k/SIDES)
+			vertices.append(path[i]+normal*radius)
+			normals.append(normal)
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for i in path.size()-1:
+		for k in SIDES:
+			var a := i*SIDES+k
+			var b := (i+1)*SIDES+k
+			var c := (i+1)*SIDES+(k+1)%SIDES
+			var d := i*SIDES+(k+1)%SIDES
+			for triangle: Array in [[a,b,c],[a,c,d]]:
+				if (vertices[triangle[1]]-vertices[triangle[0]]).cross(vertices[triangle[2]]-vertices[triangle[0]]).dot(normals[triangle[0]])>0:
+					triangle.reverse()
+				for index: int in triangle:
+					st.set_normal(normals[index])
+					st.add_vertex(vertices[index])
+	SurfaceStyle.part(parent, st.commit(), _appearance(parent, label, color, 0.85))
+
+
+static func _appearance(parent: Node3D, label: String, color: Color, roughness: float) -> Material:
+	if label in ["Shorts","BentThigh","ShortsHem","Hoodie","RibbedHem","HoodBack","KangarooPocket","PocketSeam","Drawstring","DrawstringTip","Sleeve","Forearm","Cuff","PawEmblem","EmblemToe","HoodRim","FabricFold"]:
+		return SurfaceStyle.textured(color, SurfaceStyle.Kind.FABRIC, 0.91)
+	if label in ["HeadShape","LowerCheeks","RoundEar","LongEar","PinkInnerEar","InnerEar","EyePatch","Blush","Muzzle","CheekFluff","HairTuft","Paw","Thumb","Foot","Shin","Toe","CottonTail","RoundSnout","LowerJaw","Freckle","Tail","TailTip","OrangeCrest","TailSpike","Eyelid"]:
+		var owner_node: Node = parent
+		while owner_node != null and not owner_node is MascotCharacter:
+			owner_node = owner_node.get_parent()
+		var scaly: bool = owner_node != null and owner_node._species == "dinosaur"
+		return SurfaceStyle.textured(color, SurfaceStyle.Kind.SCALES if scaly else SurfaceStyle.Kind.FUR, 0.73 if scaly else 0.92)
+	return _material(color, roughness)
