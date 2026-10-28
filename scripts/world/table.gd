@@ -5,29 +5,30 @@ extends Node3D
 const TOP := 0.75 # height of the felt surface
 const SIZE := 1.5
 const RIM := 0.07
-const WOOD := Color(0.48, 0.27, 0.16)
-const WOOD_DARK := Color(0.34, 0.19, 0.11)
-const FELT := Color(0.16, 0.48, 0.3)
+const FELT := Color(0.07, 0.3, 0.17)
 
 var _pile := Node3D.new()
 var _loose := Node3D.new()
 
 
 func _ready() -> void:
+	var wood := Mat.textured("wood_table_worn", 0.9)
+	var wood_dark := Mat.textured("wood_table_worn", 0.9, Color(0.55, 0.45, 0.4))
+	var cloth := Mat.textured("rough_linen", 0.12, FELT, false)
 	var felt := SIZE - RIM * 2.0
-	Toon.part(self, RoundedBox.build(Vector3(SIZE, 0.05, SIZE), 0.02), WOOD, Vector3(0, TOP - 0.035, 0))
-	Toon.part(self, RoundedBox.build(Vector3(felt, 0.01, felt), 0.003), FELT, Vector3(0, TOP - 0.005, 0), 1.0)
+	Mat.part(self, RoundedBox.build(Vector3(SIZE, 0.05, SIZE), 0.02), wood, Vector3(0, TOP - 0.035, 0))
+	Mat.part(self, RoundedBox.build(Vector3(felt, 0.01, felt), 0.003), cloth, Vector3(0, TOP - 0.005, 0))
 	for side in 4:
 		# Pinwheel layout so the four rim pieces never overlap at the corners.
 		var pivot := Node3D.new()
 		pivot.rotation.y = side * PI * 0.5
 		add_child(pivot)
-		Toon.part(pivot, RoundedBox.build(Vector3(SIZE - RIM, 0.03, RIM), 0.012), WOOD,
+		Mat.part(pivot, RoundedBox.build(Vector3(SIZE - RIM, 0.03, RIM), 0.012), wood,
 			Vector3(RIM * 0.5, TOP + 0.005, (SIZE - RIM) * 0.5))
-	Toon.part(self, RoundedBox.build(Vector3(SIZE - 0.12, 0.08, SIZE - 0.12), 0.015), WOOD_DARK, Vector3(0, TOP - 0.1, 0))
+	Mat.part(self, RoundedBox.build(Vector3(SIZE - 0.12, 0.08, SIZE - 0.12), 0.015), wood_dark, Vector3(0, TOP - 0.1, 0))
 	for corner in [Vector2(-1, -1), Vector2(1, -1), Vector2(1, 1), Vector2(-1, 1)]:
 		var leg_height := TOP - 0.06
-		Toon.part(self, Toon.cylinder(0.03, leg_height, 0.035), WOOD_DARK,
+		Mat.part(self, Mat.cylinder(0.03, leg_height, 0.035), wood_dark,
 			Vector3(corner.x * 0.62, leg_height * 0.5, corner.y * 0.62))
 	add_child(_pile)
 	add_child(_loose)

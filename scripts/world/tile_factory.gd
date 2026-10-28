@@ -27,7 +27,7 @@ static func create(tile: Vector2i) -> Tile:
 	mi.value = tile
 	mi.add_to_group("tiles")
 	mi.mesh = _mesh
-	mi.material_override = Toon.material(BODY, 0.55)
+	mi.material_override = Mat.material(BODY, 0.3)
 	var ink: Color = INK[tile.x]
 	if tile.x == FAKE_OKEY:
 		mi.add_child(_print("★", ink, 72, Vector3(0, 0.0, 0)))

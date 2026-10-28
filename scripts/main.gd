@@ -7,6 +7,7 @@ const COLOR_COUNT := 4
 
 var hand := Hand.new()
 var hud := Hud.new()
+var post_fx := PostFx.new()
 var watchers: Array[Watcher] = []
 var stolen := 0
 var caught := 0
@@ -37,6 +38,7 @@ func _ready() -> void:
 	add_child(hand)
 	hand.stole.connect(_on_stole)
 	hand.caught.connect(_on_caught)
+	add_child(post_fx)
 	add_child(hud)
 
 	var args := _user_args()

@@ -7,7 +7,7 @@ const RACK_DISTANCE := 0.6
 const CHAIR_DISTANCE := 1.15
 const SEAT_TOP := 0.48
 const EYE := Vector3(0, 1.35, 1.05)
-const GLOVE := Color(0.97, 0.97, 0.97)
+const GLOVE := Color(0.88, 0.62, 0.48)
 
 @export var seat_index := 0
 @export var is_local := false
@@ -28,6 +28,13 @@ func _ready() -> void:
 	_build_chair()
 	if is_local:
 		_build_hands()
+		# Soft fill from behind the player so tile faces are readable under the overhead lamp.
+		var fill := OmniLight3D.new()
+		fill.position = EYE + Vector3(0, 0.25, 0.25)
+		fill.light_color = Color(1.0, 0.9, 0.8)
+		fill.light_energy = 0.5
+		fill.omni_range = 1.6
+		add_child(fill)
 	else:
 		buddy = Buddy.new()
 		buddy.position = Vector3(0, SEAT_TOP, CHAIR_DISTANCE)
@@ -39,19 +46,14 @@ func _ready() -> void:
 
 
 func _build_chair() -> void:
-	var wood := Color(0.5, 0.28, 0.16)
-	Toon.part(self, RoundedBox.build(Vector3(0.46, 0.06, 0.44), 0.025), Color(0.75, 0.2, 0.25),
-		Vector3(0, 0.45, CHAIR_DISTANCE + 0.02))
-	Toon.part(self, RoundedBox.build(Vector3(0.46, 0.5, 0.06), 0.025), wood, Vector3(0, 0.74, CHAIR_DISTANCE + 0.23))
-	for corner in [Vector2(-1, -1), Vector2(1, -1), Vector2(1, 1), Vector2(-1, 1)]:
-		Toon.part(self, Toon.cylinder(0.025, 0.42), wood,
-			Vector3(corner.x * 0.19, 0.21, CHAIR_DISTANCE + 0.02 + corner.y * 0.18))
+	# The classic white plastic kahvehane chair; the model faces +Z, so turn it toward the table.
+	Mat.model(self, "plastic_monobloc_chair_01", Vector3(0, 0, CHAIR_DISTANCE + 0.04), PI)
 
 
-# Cartoon gloves resting on the table edge, like the player's own hands.
+# The player's own hands resting on the table edge.
 func _build_hands() -> void:
 	for side in [-1, 1]:
-		var hand := Toon.part(self, Toon.sphere(0.045), GLOVE, Vector3(side * 0.3, Table.TOP + 0.045, 0.72))
+		var hand := Mat.part(self, Mat.sphere(0.045), GLOVE, Vector3(side * 0.3, Table.TOP + 0.045, 0.72))
 		hand.scale = Vector3(1.0, 0.8, 1.15)
 		if side == 1:
 			glove = hand

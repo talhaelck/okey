@@ -36,12 +36,39 @@ func apply(model: Node3D) -> void:
 	for mi: MeshInstance3D in model.find_children("*", "MeshInstance3D", true, false):
 		var part := String(mi.name)
 		var source := mi.mesh.surface_get_material(0) as BaseMaterial3D
-		var color := _color_for(part, source.albedo_color if source else Color.WHITE)
-		mi.material_override = Toon.material(color, 0.2 if part.begins_with("eye") else 0.85)
+		mi.material_override = _material_for(part, _color_for(part, source.albedo_color if source else Color.WHITE))
 		if part.begins_with("hat_"):
 			mi.visible = hat
 		elif part.begins_with("mustache_"):
 			mi.visible = mustache
+
+
+func _material_for(part: String, color: Color) -> Material:
+	if part in ["head", "arms"]:
+		return _skin_material(color)
+	if part in ["vest", "trousers", "atlet"] or part.begins_with("hat_"):
+		# Woven cloth detail that sticks to the body (object-space projection).
+		return Mat.textured("rough_linen", 0.08, color, false, false)
+	if part.begins_with("eye"):
+		return Mat.material(color, 0.15)
+	return Mat.material(color, 0.9 if part.get_slice("_", 0) in ["mustache", "brows", "hair"] else 0.6)
+
+
+static var _skins := {}
+
+
+# Skin lets a little light through, which keeps big round faces from looking like plastic.
+static func _skin_material(color: Color) -> StandardMaterial3D:
+	var key := color.to_html()
+	if not _skins.has(key):
+		var m := StandardMaterial3D.new()
+		m.albedo_color = color
+		m.roughness = 0.55
+		m.subsurf_scatter_enabled = true
+		m.subsurf_scatter_strength = 0.2
+		m.subsurf_scatter_skin_mode = true
+		_skins[key] = m
+	return _skins[key]
 
 
 func _color_for(part: String, fallback: Color) -> Color:

@@ -1,54 +1,140 @@
 extends Node3D
-## Cozy placeholder room: floor, walls, rug, window, hanging lamp and lights.
+## The kahvehane at night: tiled floor, wood-panelled walls under smoke-yellowed plaster, a hanging lamp over
+## our table, a couple of background tables with regulars, shelves, an old TV and dim wall sconces.
+## Props are CC0 Poly Haven models (assets/polyhaven); everything is placed relative to our table at the origin.
 
-const SIZE := 5.0
-const HEIGHT := 2.8
-const WALL := Color(0.24, 0.3, 0.55)
+const WIDTH := 8.0 # along X
+const DEPTH := 7.5 # along Z
+const HEIGHT := 3.0
+const PANEL := 1.1 # height of the wooden wainscot
+const WALL := 0.06
+const LAMP_WARM := Color(1.0, 0.82, 0.62)
+
+var _fan: Node3D
 
 
 func _ready() -> void:
-	Toon.part(self, RoundedBox.build(Vector3(SIZE, 0.1, SIZE), 0.01), Color(0.55, 0.37, 0.25), Vector3(0, -0.05, 0))
-	Toon.part(self, Toon.cylinder(1.35, 0.01), Color(0.72, 0.22, 0.27), Vector3(0, 0.005, 0))
-	Toon.part(self, RoundedBox.build(Vector3(SIZE, 0.1, SIZE), 0.01), Color(0.32, 0.36, 0.58), Vector3(0, HEIGHT, 0))
-	for side in 4:
+	_build_shell()
+	_hanging_lamp(Vector3(0, HEIGHT, 0), 9.0, true)
+	_background_table(Vector3(-2.7, 0, -2.2), 0.4)
+	_background_table(Vector3(2.8, 0, -2.0), -0.3)
+	_background_table(Vector3(-2.6, 0, 2.4), 0.9)
+	_props()
+
+
+func _process(delta: float) -> void:
+	if _fan:
+		_fan.rotate_y(delta * 2.5)
+
+
+func _build_shell() -> void:
+	var floor_mat := Mat.textured("brown_floor_tiles", 1.0)
+	var plaster := Mat.textured("yellow_plaster_02", 2.0, Color(0.95, 0.85, 0.7))
+	var panel := Mat.textured("dark_paneled_wood", 1.2)
+	var ceiling := Mat.textured("plastered_wall", 2.0, Color(0.55, 0.5, 0.45))
+	Mat.part(self, BoxMesh.new(), floor_mat, Vector3(0, -0.05, 0)).scale = Vector3(WIDTH, 0.1, DEPTH)
+	Mat.part(self, BoxMesh.new(), ceiling, Vector3(0, HEIGHT + 0.05, 0)).scale = Vector3(WIDTH, 0.1, DEPTH)
+	# Four walls: [centre, length, facing yaw].
+	for wall in [[Vector3(0, 0, -DEPTH / 2), WIDTH, 0.0], [Vector3(0, 0, DEPTH / 2), WIDTH, PI],
+			[Vector3(-WIDTH / 2, 0, 0), DEPTH, PI / 2], [Vector3(WIDTH / 2, 0, 0), DEPTH, -PI / 2]]:
 		var pivot := Node3D.new()
-		pivot.rotation.y = side * PI * 0.5
+		pivot.position = wall[0]
+		pivot.rotation.y = wall[2]
 		add_child(pivot)
-		Toon.part(pivot, RoundedBox.build(Vector3(SIZE, HEIGHT, 0.1), 0.01), WALL, Vector3(0, HEIGHT * 0.5, -SIZE * 0.5))
-	_build_window(Vector3(0.9, 1.5, -SIZE * 0.5 + 0.05))
-	_build_lamp()
+		var length: float = wall[1]
+		Mat.part(pivot, BoxMesh.new(), plaster, Vector3(0, HEIGHT / 2, 0)).scale = Vector3(length, HEIGHT, WALL)
+		Mat.part(pivot, BoxMesh.new(), panel, Vector3(0, PANEL / 2, WALL)).scale = Vector3(length, PANEL, 0.03)
+		Mat.part(pivot, BoxMesh.new(), Mat.textured("dark_paneled_wood", 1.2, Color(0.6, 0.5, 0.45)),
+			Vector3(0, PANEL, WALL + 0.02)).scale = Vector3(length, 0.05, 0.06)
 
 
-func _build_window(pos: Vector3) -> void:
-	Toon.part(self, RoundedBox.build(Vector3(1.3, 0.85, 0.08), 0.06), Color(0.45, 0.25, 0.6), pos)
-	var glass := MeshInstance3D.new()
-	glass.mesh = RoundedBox.build(Vector3(1.1, 0.65, 0.04), 0.05)
-	glass.material_override = Toon.glow(Color(0.35, 0.85, 0.65), 0.8)
-	glass.position = pos + Vector3(0, 0, 0.03)
-	add_child(glass)
+## Industrial pendant with a warm spot cone that also lights the smoke in the air.
+func _hanging_lamp(at: Vector3, energy: float, main := false) -> void:
+	Mat.model(self, "hanging_industrial_lamp", at)
+	var bulb := at + Vector3(0, -1.2, 0)
+	var spot := SpotLight3D.new()
+	spot.position = bulb
+	spot.rotation.x = -PI / 2
+	spot.light_color = LAMP_WARM
+	spot.light_energy = energy
+	spot.spot_range = 4.0
+	spot.spot_angle = 55.0
+	spot.spot_angle_attenuation = 0.8
+	spot.shadow_enabled = true
+	spot.light_volumetric_fog_energy = 1.5 if main else 0.8
+	add_child(spot)
+	var glow := OmniLight3D.new()
+	glow.position = bulb + Vector3(0, 0.15, 0)
+	glow.light_color = LAMP_WARM
+	glow.light_energy = energy * 0.08
+	glow.omni_range = 3.5
+	add_child(glow)
 
 
-func _build_lamp() -> void:
-	var shade_y := 1.95
-	Toon.part(self, Toon.cylinder(0.008, HEIGHT - shade_y), Color(0.15, 0.15, 0.15),
-		Vector3(0, (HEIGHT + shade_y) * 0.5, 0))
-	Toon.part(self, Toon.cylinder(0.3, 0.2, 0.07), Color(0.98, 0.72, 0.2), Vector3(0, shade_y, 0))
-	var bulb := MeshInstance3D.new()
-	bulb.mesh = Toon.sphere(0.07)
-	bulb.material_override = Toon.glow(Color(1.0, 0.9, 0.7), 3.0)
-	bulb.position = Vector3(0, shade_y - 0.1, 0)
-	add_child(bulb)
+## A round table with regulars around it, under its own lamp.
+func _background_table(at: Vector3, yaw: float) -> void:
+	var table := Node3D.new()
+	table.position = at
+	table.rotation.y = yaw
+	add_child(table)
+	Mat.model(table, "round_wooden_table_01", Vector3.ZERO, 0.0, 0.75)
+	for i in 3:
+		var angle := i * TAU / 3.0 + 0.3
+		var dir := Vector3(sin(angle), 0, cos(angle))
+		var seat_pos := dir * 0.85
+		Mat.model(table, "plastic_monobloc_chair_01", seat_pos, angle + PI)
+		if i < 2:
+			var regular := Buddy.new()
+			regular.position = seat_pos + Vector3(0, Seat.SEAT_TOP - 0.03, 0) - dir * 0.04
+			regular.rotation.y = angle
+			table.add_child(regular)
+			regular.setup(Appearance.random())
+	_hanging_lamp(Vector3(at.x, HEIGHT, at.z), 3.0)
 
-	var lamp := OmniLight3D.new()
-	lamp.position = Vector3(0, shade_y - 0.2, 0)
-	lamp.light_color = Color(1.0, 0.86, 0.68)
-	lamp.light_energy = 1.9
-	lamp.omni_range = 5.0
-	lamp.shadow_enabled = true
-	add_child(lamp)
 
-	var fill := DirectionalLight3D.new()
-	fill.rotation_degrees = Vector3(-55, 35, 0)
-	fill.light_color = Color(0.75, 0.82, 1.0)
-	fill.light_energy = 0.35
-	add_child(fill)
+func _props() -> void:
+	var back := -DEPTH / 2 + WALL / 2 + 0.03
+	var left := -WIDTH / 2 + WALL / 2 + 0.03
+	var right := WIDTH / 2 - WALL / 2 - 0.03
+
+	# Shelves along the left wall with a few things on top.
+	for z in [-0.6, 0.0]:
+		var shelf := Mat.model(self, "painted_wooden_shelves", Vector3(left + 0.02, 0, z), PI / 2)
+		shelf.scale = Vector3.ONE * 1.2
+	Mat.model(self, "jug_01", Vector3(left + 0.22, 1.36, -0.6), PI / 2)
+	Mat.model(self, "brass_pot_01", Vector3(left + 0.22, 1.36, 0.0), 0.4)
+	Mat.model(self, "mantel_clock_01", Vector3(left + 0.2, 1.36, 0.25), PI / 2, 1.1)
+
+	# Old TV up on a bracket in the back-right corner, its screen glow flickering on the wall.
+	var tv_at := Vector3(right - 0.45, 1.85, back + 0.45)
+	Mat.part(self, BoxMesh.new(), Mat.textured("dark_paneled_wood", 1.0), tv_at - Vector3(0, 0.03, 0)).scale = Vector3(0.75, 0.05, 0.6)
+	Mat.model(self, "Television_01", tv_at, -PI / 4)
+	var screen := OmniLight3D.new()
+	screen.position = tv_at + Vector3(-0.35, 0.25, 0.35)
+	screen.light_color = Color(0.55, 0.7, 1.0)
+	screen.light_energy = 0.9
+	screen.omni_range = 2.5
+	screen.set_script(preload("res://scripts/world/flicker.gd"))
+	add_child(screen)
+
+	# Pictures and warm sconces on the back wall.
+	Mat.model(self, "hanging_picture_frame_01", Vector3(-1.0, 1.75, back), 0.0, 1.2)
+	Mat.model(self, "hanging_picture_frame_01", Vector3(1.3, 1.7, back), 0.0, 0.9)
+	for x in [-2.6, 2.4]:
+		Mat.model(self, "industrial_wall_sconce", Vector3(x, 1.6, back))
+		_sconce_light(Vector3(x, 1.75, back + 0.2))
+	for z in [-2.2, 2.2]:
+		Mat.model(self, "industrial_wall_sconce", Vector3(right, 1.6, z), -PI / 2)
+		_sconce_light(Vector3(right - 0.2, 1.75, z))
+
+	Mat.model(self, "potted_plant_01", Vector3(left + 0.45, 0, back + 0.45))
+	_fan = Mat.model(self, "ceiling_fan", Vector3(2.4, HEIGHT, 1.8))
+
+
+func _sconce_light(at: Vector3) -> void:
+	var light := OmniLight3D.new()
+	light.position = at
+	light.light_color = LAMP_WARM
+	light.light_energy = 0.7
+	light.omni_range = 2.2
+	add_child(light)

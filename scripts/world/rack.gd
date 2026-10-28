@@ -10,8 +10,6 @@ const ROWS := 2
 const TILT := 0.24 # radians the board leans back
 const SLOT_GAP := 0.003
 const ROW_GAP := 0.018
-const WOOD := Color(0.8, 0.5, 0.32)
-const WOOD_DARK := Color(0.62, 0.36, 0.22)
 
 var _board := Basis(Vector3.RIGHT, -TILT)
 var _board_origin := Vector3(0, 0.014, -0.016) # bottom of the board's front face
@@ -20,12 +18,14 @@ var _slots: Array[Tile] = []
 
 
 func _ready() -> void:
-	Toon.part(self, RoundedBox.build(Vector3(LENGTH, 0.014, 0.1), 0.005), WOOD_DARK, Vector3(0, 0.007, 0))
-	var board := Toon.part(self, RoundedBox.build(Vector3(LENGTH, HEIGHT, 0.018), 0.006), WOOD,
+	var wood := Mat.textured("wood_table_worn", 0.6, Color(1.0, 0.85, 0.7))
+	var wood_dark := Mat.textured("wood_table_worn", 0.6, Color(0.6, 0.48, 0.4))
+	Mat.part(self, RoundedBox.build(Vector3(LENGTH, 0.014, 0.1), 0.005), wood_dark, Vector3(0, 0.007, 0))
+	var board := Mat.part(self, RoundedBox.build(Vector3(LENGTH, HEIGHT, 0.018), 0.006), wood,
 		_board_origin + _board.y * HEIGHT * 0.5 - _board.z * 0.009)
 	board.basis = _board
 	for row in ROWS:
-		var lip := Toon.part(self, RoundedBox.build(Vector3(LENGTH, 0.01, 0.03), 0.004), WOOD_DARK,
+		var lip := Mat.part(self, RoundedBox.build(Vector3(LENGTH, 0.01, 0.03), 0.004), wood_dark,
 			_board_origin + _board.y * (_row_bottom(row) - 0.005) + _board.z * 0.015)
 		lip.basis = _board
 	add_child(_tiles)

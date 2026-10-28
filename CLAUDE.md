@@ -10,7 +10,11 @@
 
 ## Tech
 - **Engine:** Godot 4.7 (GDScript, Forward+). Executable: `C:\Tools\Godot\godot.cmd` (on user PATH as `godot`).
-- Scenes are thin; most geometry is built in code so it stays text-editable. Placeholder art is procedural until real assets replace it.
+- Scenes are thin; most geometry is built in code so it stays text-editable.
+- Look: realistic lighting and PBR materials (Liar's Bar style) around stylized dayı characters. Dark warm kahvehane,
+  volumetric fog, SSAO/SSIL, AgX tonemap, vignette + film grain (`scripts/ui/post_fx.gd`).
+- Environment props and textures are CC0 from Poly Haven: `python tools/fetch_polyhaven.py model|texture <id>...`
+  downloads 1k sets into `assets/polyhaven/<id>/` and adds the CREDITS row. Use them via `Mat.model()` / `Mat.textured()`.
 - Art is made by Claude, not by hand: Blender 5.2.3 LTS lives in `C:\Tools\blender-5.2.3-windows-x64\` and models are
   built by Python scripts in `tools/blender/` (metaballs for organic shapes), exported to `assets/models/`.
   Rebuild the dayı: `blender -b --factory-startup -P tools/blender/dayi.py -- <abs path>/assets/models/dayi/dayi.glb [preview.png]`.
@@ -21,13 +25,14 @@
 scenes/            main.tscn (entry), table.tscn, seat.tscn
 scripts/main.gd    deals tiles, wires camera/hand/watchers/HUD, debug screenshot mode
 scripts/camera/    focus_camera.gd: observe/rack modes + depth-of-field blur
-scripts/world/     rounded_box, toon (materials), tile + tile_factory, rack (2x15 slots), table (pile, loose tiles),
-                   seat, buddy (opponent dayı: procedural breathing, head turn, head shake), room
+scripts/world/     rounded_box, mat (materials, Poly Haven textures/models), tile + tile_factory, rack (2x15 slots), table (pile, loose tiles),
+                   seat (monobloc chair), buddy (dayı: procedural breathing, head turn, head shake),
+                   room (kahvehane shell, lamps, background tables with regulars, props), flicker (TV light)
 scripts/character/ appearance.gd: dayı colours + optional parts (hat, mustache), random(), apply() to a dayi.glb
-tools/blender/     dayi.py: builds the seated dayı; head parts sit under a "Head" pivot node
+tools/            fetch_polyhaven.py; blender/dayi.py: builds the seated dayı; head parts sit under a "Head" pivot node
 scripts/play/      hand.gd: local glove, ray picking, drop targets, steal/caught; watcher.gd: opponent glance AI
-scripts/ui/        hud.gd: crosshair, hint, score, flash messages (built in code)
-assets/            models/dayi/dayi.glb (generated, do not hand-edit), CREDITS.md (third-party assets only)
+scripts/ui/        hud.gd: crosshair, hint, score, flash messages; post_fx.gd: vignette + grain
+assets/            models/dayi/dayi.glb (generated, do not hand-edit), polyhaven/ (CC0 downloads), CREDITS.md
 ```
 
 ## Commands
@@ -56,8 +61,9 @@ assets/            models/dayi/dayi.glb (generated, do not hand-edit), CREDITS.m
 - **Direction changed (see master.md section 6):** 101 Okey, "Yakala!" key instead of automatic catching, kahvehane dayıları
   with a modular character creator. The procedural room is a throwaway placeholder.
 - Done: layout pass (1.5 m table, chairs at 1.15 m, eye at 1.35 m; centre pile visible, own rack low and blurred).
-- Next: "Yakala!" mechanic, kahvehane room + props from Blender scripts, more dayı parts (mustache/hat/body variants),
-  then the character creator screen.
+- Done: kahvehane look pass (Poly Haven props/textures, moody lighting, fog, skin subsurface, cloth textures).
+- Next: real dayı hands for the player (still skin-coloured spheres), Turkish props from Blender (ince belli çay
+  bardağı, semaver, tespih), "Yakala!" mechanic, more dayı parts, then the character creator screen.
 
 ## Rules
 1. Keep network, camera/visual effects and Okey rules in separate modules (see master.md section 5).
