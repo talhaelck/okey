@@ -1,30 +1,33 @@
 class_name Buddy
 extends Node3D
-## Animated CC0 character in an opponent seat (models live in assets/models/characters).
-## Visual only: Watcher decides where it looks and when it reacts. Faces the table along -Z when idle.
+## A dayı sitting in an opponent seat (model from tools/blender/dayi.py, looks from an Appearance).
+## Visual only: Watcher decides where he looks and when he reacts. Faces the table along -Z when idle.
+## All motion is procedural: breathing, head bob, turning (head leads, body follows) and head shakes.
 
+const MODEL := preload("res://assets/models/dayi/dayi.glb")
 const TURN_TIME := 0.3
 const MAX_TURN := 1.75
+const HEAD_SHARE := 0.45 # how much of a turn the head does on its own
+const ALERT_HEIGHT := 1.25
 
-var _anim: AnimationPlayer
-var _idle := ""
-var _tween: Tween
+var appearance: Appearance
+
+var _body: Node3D
+var _head: Node3D
+var _head_yaw := 0.0
+var _shake := 0.0
+var _time := randf() * 10.0
+var _turn_tween: Tween
 var _alert := Label3D.new()
 
 
-func setup(model: String, height: float) -> void:
-	var body: Node3D = load("res://assets/models/characters/%s.glb" % model).instantiate()
-	add_child(body)
-	body.scale = Vector3.ONE * height / _bounds(body).size.y
-	body.rotation.y = PI # glTF models face +Z
-	_anim = body.find_children("*", "AnimationPlayer", true, false)[0]
-	_idle = _animation("Sitting_Idle")
-	if _idle.is_empty():
-		_idle = _animation("Idle")
-	_anim.get_animation(_idle).loop_mode = Animation.LOOP_LINEAR
-	_anim.play(_idle)
-	_anim.seek(randf() * _anim.current_animation_length)
-	_anim.animation_finished.connect(func(_name: StringName) -> void: _anim.play(_idle, 0.2))
+func setup(look: Appearance) -> void:
+	appearance = look
+	_body = MODEL.instantiate()
+	_body.rotation.y = PI # glTF models face +Z
+	add_child(_body)
+	look.apply(_body)
+	_head = _body.find_child("Head", true, false)
 
 	_alert.text = "!"
 	_alert.font_size = 160
@@ -33,9 +36,17 @@ func setup(model: String, height: float) -> void:
 	_alert.outline_size = 36
 	_alert.outline_modulate = Color(0.25, 0.1, 0.05)
 	_alert.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	_alert.position = Vector3(0, height + 0.15, 0)
+	_alert.position = Vector3(0, ALERT_HEIGHT, 0)
 	_alert.visible = false
 	add_child(_alert)
+
+
+func _process(delta: float) -> void:
+	if _body == null:
+		return
+	_time += delta
+	_body.scale = Vector3(1.0, 1.0 + sin(_time * 2.2) * 0.012, 1.0)
+	_head.rotation = Vector3(sin(_time * 0.9) * 0.04, _head_yaw + sin(_time * 24.0) * _shake, sin(_time * 0.6) * 0.03)
 
 
 ## Turns toward a world point; amount 0 keeps facing the table, 1 looks straight at it.
@@ -48,10 +59,11 @@ func look_home() -> void:
 	_turn(0.0)
 
 
-func gesture(suffix: String) -> void:
-	var name := _animation(suffix)
-	if not name.is_empty():
-		_anim.play(name, 0.15)
+## Disapproving "tsk tsk" head shake.
+func shake_head() -> void:
+	var tween := create_tween()
+	tween.tween_property(self, "_shake", 0.35, 0.08)
+	tween.tween_property(self, "_shake", 0.0, 0.9).set_ease(Tween.EASE_IN)
 
 
 func set_alert(on: bool) -> void:
@@ -59,30 +71,8 @@ func set_alert(on: bool) -> void:
 
 
 func _turn(yaw: float) -> void:
-	if _tween:
-		_tween.kill()
-	_tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	_tween.tween_property(self, "rotation:y", yaw, TURN_TIME)
-
-
-# Animation names carry armature prefixes ("CharacterArmature|Idle"), so match on the suffix.
-func _animation(suffix: String) -> String:
-	for name in _anim.get_animation_list():
-		if name == suffix or name.ends_with("|" + suffix):
-			return name
-	return ""
-
-
-func _bounds(root: Node3D) -> AABB:
-	var out := AABB()
-	var first := true
-	for mi: MeshInstance3D in root.find_children("*", "MeshInstance3D", true, false):
-		var xf := Transform3D.IDENTITY
-		var node: Node = mi
-		while node != root:
-			xf = (node as Node3D).transform * xf
-			node = node.get_parent()
-		var box := xf * mi.get_aabb()
-		out = box if first else out.merge(box)
-		first = false
-	return out
+	if _turn_tween:
+		_turn_tween.kill()
+	_turn_tween = create_tween().set_parallel().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_turn_tween.tween_property(self, "_head_yaw", yaw * HEAD_SHARE, TURN_TIME * 0.7)
+	_turn_tween.tween_property(self, "rotation:y", yaw * (1.0 - HEAD_SHARE), TURN_TIME)

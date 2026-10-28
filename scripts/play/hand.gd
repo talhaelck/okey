@@ -8,7 +8,7 @@ extends Node3D
 signal stole
 signal caught(by: Watcher)
 
-const REACH := 1.35
+const REACH := 1.5
 const FOLLOW := 18.0
 const CARRY_DISTANCE := 0.4
 const RACK_LIFT := 0.025

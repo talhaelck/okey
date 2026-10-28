@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://dt75rtttqhsvw"
-path="res://.godot/imported/cactoro.glb-d646580abb0cf890574968b57ed6122a.scn"
+uid="uid://byc10ul5qftiw"
+path="res://.godot/imported/dayi.glb-8fdafdd95e4c13533aa5fbca72a84e83.scn"
 
 [deps]
 
-source_file="res://assets/models/characters/cactoro.glb"
-dest_files=["res://.godot/imported/cactoro.glb-d646580abb0cf890574968b57ed6122a.scn"]
+source_file="res://assets/models/dayi/dayi.glb"
+dest_files=["res://.godot/imported/dayi.glb-8fdafdd95e4c13533aa5fbca72a84e83.scn"]
 
 [params]
 

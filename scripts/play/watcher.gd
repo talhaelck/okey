@@ -46,7 +46,7 @@ func is_watching(other: Seat) -> bool:
 
 ## Shakes its head at the thief and keeps staring a little longer.
 func caught_thief() -> void:
-	seat.buddy.gesture("No")
+	seat.buddy.shake_head()
 	_timer = maxf(_timer, 1.5)
 
 

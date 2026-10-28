@@ -1,20 +1,16 @@
 class_name Seat
 extends Node3D
-## One player's place at the table: chair, rack, character (or gloves for the local player) and camera anchors.
+## One player's place at the table: chair, rack, a dayı (or gloves for the local player) and camera anchors.
 ## Built facing the table centre from the +Z side, then rotated by seat_index * 90°.
 
-const RACK_DISTANCE := 0.5
-const CHAIR_DISTANCE := 1.0
+const RACK_DISTANCE := 0.6
+const CHAIR_DISTANCE := 1.15
 const SEAT_TOP := 0.48
-const EYE := Vector3(0, 1.15, 0.92)
+const EYE := Vector3(0, 1.35, 1.05)
 const GLOVE := Color(0.97, 0.97, 0.97)
 
 @export var seat_index := 0
 @export var is_local := false
-## Model name in assets/models/characters; unused for the local player.
-@export var character := ""
-## Overall model height in metres (sitting models need less than standing ones).
-@export var character_height := 0.85
 
 var rack: Rack
 var head_anchor: Marker3D
@@ -32,11 +28,11 @@ func _ready() -> void:
 	_build_chair()
 	if is_local:
 		_build_hands()
-	elif not character.is_empty():
+	else:
 		buddy = Buddy.new()
 		buddy.position = Vector3(0, SEAT_TOP, CHAIR_DISTANCE)
 		add_child(buddy)
-		buddy.setup(character, character_height)
+		buddy.setup(Appearance.random())
 	head_anchor = _marker(EYE, EYE + Vector3.FORWARD)
 	var rack_centre := rack.position + Vector3(0, 0.08, -0.015)
 	rack_focus_anchor = _marker(rack_centre + Vector3(0, 0.27, 0.34), rack_centre)
@@ -55,7 +51,7 @@ func _build_chair() -> void:
 # Cartoon gloves resting on the table edge, like the player's own hands.
 func _build_hands() -> void:
 	for side in [-1, 1]:
-		var hand := Toon.part(self, Toon.sphere(0.045), GLOVE, Vector3(side * 0.3, Table.TOP + 0.045, 0.66))
+		var hand := Toon.part(self, Toon.sphere(0.045), GLOVE, Vector3(side * 0.3, Table.TOP + 0.045, 0.72))
 		hand.scale = Vector3(1.0, 0.8, 1.15)
 		if side == 1:
 			glove = hand

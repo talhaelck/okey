@@ -12,7 +12,7 @@ const PITCH_MAX := 0.6
 const BLEND_TIME := 0.35
 
 # Depth-of-field distances (metres) for each mode; interpolated during the transition.
-const OBSERVE_NEAR := 0.85
+const OBSERVE_NEAR := 0.9
 const OBSERVE_FAR := 60.0
 const RACK_NEAR := 0.05
 const RACK_FAR := 0.6
@@ -24,7 +24,7 @@ var focused := false
 var _head: Node3D
 var _rack: Node3D
 var _yaw := 0.0
-var _pitch := -0.35
+var _pitch := -0.5
 var _blend := 0.0
 var _tween: Tween
 

@@ -13,7 +13,7 @@ static func material(color: Color, roughness := 0.85) -> StandardMaterial3D:
 		m.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
 		m.specular_mode = BaseMaterial3D.SPECULAR_TOON
 		m.rim_enabled = true
-		m.rim = 0.3
+		m.rim = 0.12
 		m.rim_tint = 0.6
 		_materials[key] = m
 	return _materials[key]

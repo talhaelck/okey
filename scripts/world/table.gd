@@ -3,7 +3,7 @@ extends Node3D
 ## Square okey table: green felt, raised wooden rim, centre draw pile.
 
 const TOP := 0.75 # height of the felt surface
-const SIZE := 1.3
+const SIZE := 1.5
 const RIM := 0.07
 const WOOD := Color(0.48, 0.27, 0.16)
 const WOOD_DARK := Color(0.34, 0.19, 0.11)
@@ -28,7 +28,7 @@ func _ready() -> void:
 	for corner in [Vector2(-1, -1), Vector2(1, -1), Vector2(1, 1), Vector2(-1, 1)]:
 		var leg_height := TOP - 0.06
 		Toon.part(self, Toon.cylinder(0.03, leg_height, 0.035), WOOD_DARK,
-			Vector3(corner.x * 0.55, leg_height * 0.5, corner.y * 0.55))
+			Vector3(corner.x * 0.62, leg_height * 0.5, corner.y * 0.62))
 	add_child(_pile)
 	add_child(_loose)
 

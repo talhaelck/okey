@@ -42,7 +42,7 @@ func _build_lamp() -> void:
 	var lamp := OmniLight3D.new()
 	lamp.position = Vector3(0, shade_y - 0.2, 0)
 	lamp.light_color = Color(1.0, 0.86, 0.68)
-	lamp.light_energy = 2.4
+	lamp.light_energy = 1.9
 	lamp.omni_range = 5.0
 	lamp.shadow_enabled = true
 	add_child(lamp)

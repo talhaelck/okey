@@ -11,7 +11,7 @@ const INK := [
 	Color(0.95, 0.62, 0.05), # yellow
 	Color(0.16, 0.55, 0.3), # fake okey
 ]
-const BODY := Color(0.98, 0.95, 0.86)
+const BODY := Color(0.93, 0.9, 0.82)
 
 static var _mesh: ArrayMesh
 static var _font: SystemFont
