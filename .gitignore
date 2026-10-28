@@ -1,0 +1,6 @@
+# Godot cache (regenerated on import)
+.godot/
+*.tmp
+
+# Debug screenshots
+/screenshots/
