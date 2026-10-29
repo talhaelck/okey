@@ -44,7 +44,9 @@ static func _prepare() -> void:
 
 	_dimple_mat = StandardMaterial3D.new()
 	_dimple_mat.albedo_color = Color("ded4bd") # Indented dimple ring
-	_dimple_mat.roughness = 0.45
+	_dimple_mat.roughness = 0.95
+	_dimple_mat.metallic = 0.0
+	_dimple_mat.metallic_specular = 0.0
 	_dimple_mesh = TorusMesh.new()
 	_dimple_mesh.inner_radius = 0.0052
 	_dimple_mesh.outer_radius = 0.0065
@@ -114,8 +116,8 @@ static func create(value: Vector2i) -> Tile:
 	var xray_mat := StandardMaterial3D.new()
 	xray_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	xray_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	xray_mat.no_depth_test = true
-	xray_mat.render_priority = 10
+	xray_mat.no_depth_test = false
+	xray_mat.render_priority = 1
 	var base_ink: Color = INK[clampi(value.x, 0, 3)]
 	xray_mat.albedo_color = Color(base_ink.r, base_ink.g, base_ink.b, 0.96)
 
