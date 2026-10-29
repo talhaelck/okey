@@ -3,35 +3,48 @@ extends Node3D
 ## One player's place at the table: chair, rack, character (or gloves for the local player) and camera anchors.
 ## Built facing the table centre from the +Z side, then rotated by seat_index * 90°.
 
-const RACK_DISTANCE := 0.5
-const CHAIR_DISTANCE := 1.0
-const SEAT_TOP := 0.48
-const EYE := Vector3(0, 1.28, 1.30)
+const RACK_DISTANCE := 0.50
+const CHAIR_DISTANCE := 0.96
+const SEAT_TOP := 0.55
+const EYE := Vector3(0, 1.32, 1.16)
 const GLOVE := Color(0.97, 0.97, 0.97)
+const PATRON_NAMES := {
+	"sabri": "Sabri Dayı",
+	"temel": "Temel Reis",
+	"rifki": "Rıfkı Amca",
+	"davut": "Davut Usta",
+}
 
 @export var seat_index := 0
 @export var is_local := false
-## Mascot kind (panda/bunny/dinosaur) or legacy glTF filename; unused for the local player.
-@export var character := ""
-## Overall model height in metres (sitting models need less than standing ones).
+@export var character := "sabri"
 @export var character_height := 0.85
 
 var rack: Rack
 var head_anchor: Marker3D
 var rack_focus_anchor: Marker3D
 var buddy: Buddy
-## The local player's right glove, which reaches for tiles.
+## The local player's right hand, which reaches for tiles & props.
 var glove: MeshInstance3D
+var left_hand: MeshInstance3D
 var _arm_meshes: Array[MeshInstance3D] = []
 var _hands: Array[MeshInstance3D] = []
 var _knock_tween: Tween
 var _left_rest := Vector3.ZERO
 
 
+func display_name() -> String:
+	var base_name: String = PATRON_NAMES.get(character, character.capitalize())
+	if is_local:
+		return "%s (Sen)" % base_name
+	return base_name
+
+
 func _ready() -> void:
 	rotation.y = seat_index * PI * 0.5
 	rack = Rack.new()
-	rack.position = Vector3(0, Table.TOP, RACK_DISTANCE)
+	rack.is_opponent = not is_local
+	rack.position = Vector3(0, Table.TOP, 0.57) if is_local else Vector3(0, Table.TOP, RACK_DISTANCE)
 	add_child(rack)
 	_build_chair()
 	if is_local:
@@ -42,30 +55,28 @@ func _ready() -> void:
 		add_child(buddy)
 		buddy.setup(character, character_height)
 	head_anchor = _marker(EYE, EYE + Vector3.FORWARD)
-	var rack_centre := rack.position + Vector3(0, 0.08, -0.015)
-	rack_focus_anchor = _marker(rack_centre + Vector3(0, 0.27, 0.34), rack_centre)
+	var rack_centre := rack.position + Vector3(0, 0.056, -0.01)
+	rack_focus_anchor = _marker(rack_centre + Vector3(0, 0.24, 0.34), rack_centre)
 
 
 func _build_chair() -> void:
-	var wood := SurfaceStyle.textured(Color("3d291d"), SurfaceStyle.Kind.WOOD, 0.54, true)
-	var leather := SurfaceStyle.textured(Color("50302b"), SurfaceStyle.Kind.LEATHER, 0.72)
-	SurfaceStyle.box(self, Vector3(0.48,0.07,0.45), Vector3(0,0.445,CHAIR_DISTANCE+0.02), wood, 0.025)
-	SurfaceStyle.box(self, Vector3(0.44,0.065,0.41), Vector3(0,0.475,CHAIR_DISTANCE+0.02), leather, 0.03)
-	SurfaceStyle.box(self, Vector3(0.48,0.52,0.065), Vector3(0,0.73,CHAIR_DISTANCE+0.23), wood, 0.025)
-	SurfaceStyle.box(self, Vector3(0.39,0.40,0.055), Vector3(0,0.75,CHAIR_DISTANCE+0.19), leather, 0.025)
-	for x in [-0.18,0.18]:
-		for y in [0.59,0.91]:
-			SurfaceStyle.part(self, Toon.sphere(0.006), SurfaceStyle.metal(), Vector3(x,y,CHAIR_DISTANCE+0.155))
-	for corner in [Vector2(-1, -1), Vector2(1, -1), Vector2(1, 1), Vector2(-1, 1)]:
-		SurfaceStyle.part(self, Toon.cylinder(0.025, 0.42), wood,
-			Vector3(corner.x * 0.19, 0.21, CHAIR_DISTANCE + 0.02 + corner.y * 0.18))
+	var chair_glb: Node3D = load("res://assets/models/table_details/kiraathane_chair.glb").instantiate()
+	chair_glb.name = "KiraathaneChair"
+	chair_glb.position = Vector3(0, 0, CHAIR_DISTANCE)
+	add_child(chair_glb)
 
 
-# Cartoon gloves resting on the table edge, like the player's own hands.
 func _build_hands() -> void:
+	var sleeve_colors := {
+		"sabri": Color("82151d"),
+		"rifki": Color("4e321e"),
+		"temel": Color("2e4228"),
+		"davut": Color("1e3450"),
+	}
+	var sleeve_mat := SurfaceStyle.textured(sleeve_colors.get(character, Color("82151d")), SurfaceStyle.Kind.FABRIC)
 	for side in [-1, 1]:
 		var hand := MeshInstance3D.new()
-		hand.position = Vector3(side*0.30,Table.TOP+0.045,0.77)
+		hand.position = Vector3(side*0.37,Table.TOP+0.042,0.75)
 		add_child(hand)
 		var path := "res://assets/models/patrons/local_hand_left.glb" if side == -1 else "res://assets/models/patrons/local_hand.glb"
 		var model: Node3D = load(path).instantiate()
@@ -73,11 +84,57 @@ func _build_hands() -> void:
 		_hands.append(hand)
 		if side == -1:
 			_left_rest = hand.position
-		SurfaceStyle.rod(self, Vector3(side*0.4,0.6,1.13), Vector3(side*0.33,0.71,0.97), 0.065, SurfaceStyle.textured(Color("34413b"), SurfaceStyle.Kind.FABRIC))
-		var arm := SurfaceStyle.part(self, Toon.cylinder(0.044,1.0,0.038), SurfaceStyle.textured(Color("34413b"), SurfaceStyle.Kind.FABRIC))
+			left_hand = hand
+		SurfaceStyle.rod(self, Vector3(side*0.4,0.6,1.13), Vector3(side*0.33,0.71,0.97), 0.065, sleeve_mat)
+		var arm := SurfaceStyle.part(self, Toon.cylinder(0.044,1.0,0.038), sleeve_mat)
 		_arm_meshes.append(arm)
 		if side == 1:
 			glove = hand
+	if not character.is_empty():
+		var path := "res://assets/models/patrons/%s.glb" % character
+		if ResourceLoader.exists(path):
+			var local_body: Node3D = load(path).instantiate()
+			local_body.name = "LocalPlayerBody"
+			local_body.position = Vector3(0, SEAT_TOP, CHAIR_DISTANCE)
+			var omit_keywords := [
+				"head", "skull", "face", "neck", "eye", "brow", "lid",
+				"nose", "ear", "mustache", "cap", "hat", "hair", "lip",
+				"chin", "beard", "glasses", "arm", "hand", "finger",
+				"palm", "wrist", "sleeve", "bicep", "chestneck",
+				"chain", "necklace", "collar", "jacket", "atlet", "shirt",
+				"sweater", "vest", "button"
+			]
+			for node in local_body.find_children("*", "", true, false):
+				var n_low: String = node.name.to_lower()
+				for kw in omit_keywords:
+					if kw in n_low:
+						node.queue_free()
+						break
+			add_child(local_body)
+
+
+func set_character(new_char: String) -> void:
+	character = new_char
+	if is_local:
+		for arm in _arm_meshes:
+			if is_instance_valid(arm):
+				arm.queue_free()
+		_arm_meshes.clear()
+		for h in _hands:
+			if is_instance_valid(h):
+				h.queue_free()
+		_hands.clear()
+		var old_body := get_node_or_null("LocalPlayerBody")
+		if is_instance_valid(old_body):
+			old_body.queue_free()
+		_build_hands()
+	else:
+		if is_instance_valid(buddy):
+			buddy.queue_free()
+		buddy = Buddy.new()
+		buddy.position = Vector3(0, SEAT_TOP, CHAIR_DISTANCE)
+		add_child(buddy)
+		buddy.setup(character, character_height)
 
 
 func _process(_delta: float) -> void:
@@ -102,6 +159,21 @@ func knock_table() -> void:
 	_knock_tween.tween_property(left,"position",_left_rest+Vector3(0,0.025,-0.04),0.055)
 	_knock_tween.tween_property(left,"position",_left_rest+Vector3(0,-0.018,-0.04),0.055)
 	_knock_tween.tween_property(left,"position",_left_rest,0.18)
+
+
+## Animates the local player's left hand reaching out to touch/interact with a prop on the table.
+func animate_left_reach(world_target: Vector3, hold_time := 0.18) -> void:
+	if _hands.is_empty():
+		return
+	if _knock_tween:
+		_knock_tween.kill()
+	var left := _hands[0]
+	var local_target := to_local(world_target)
+	local_target.y = maxf(Table.TOP + 0.04, local_target.y)
+	_knock_tween = create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_knock_tween.tween_property(left, "position", local_target, 0.16)
+	_knock_tween.tween_interval(hold_time)
+	_knock_tween.tween_property(left, "position", _left_rest, 0.24)
 
 
 func _marker(pos: Vector3, target: Vector3) -> Marker3D:

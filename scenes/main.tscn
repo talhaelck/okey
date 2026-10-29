@@ -20,23 +20,24 @@ ssil_enabled = true
 ssil_radius = 2.0
 ssil_intensity = 0.55
 glow_enabled = true
-glow_intensity = 0.23
-glow_hdr_threshold = 1.4
+glow_intensity = 0.16
+glow_bloom = 0.02
+glow_hdr_threshold = 2.4
 volumetric_fog_enabled = true
-volumetric_fog_density = 0.009
-volumetric_fog_albedo = Color(0.65, 0.56, 0.44, 1)
+volumetric_fog_density = 0.013
+volumetric_fog_albedo = Color(0.74, 0.56, 0.38, 1)
 volumetric_fog_length = 12.0
 adjustment_enabled = true
-adjustment_saturation = 0.98
+adjustment_saturation = 1.04
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributes_focus"]
 dof_blur_far_enabled = true
-dof_blur_far_distance = 60.0
-dof_blur_far_transition = 0.4
+dof_blur_far_distance = 3.45
+dof_blur_far_transition = 2.4
 dof_blur_near_enabled = true
-dof_blur_near_distance = 0.55
-dof_blur_near_transition = 0.2
-dof_blur_amount = 0.065
+dof_blur_near_distance = 0.62
+dof_blur_near_transition = 0.22
+dof_blur_amount = 0.055
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1_main")
@@ -56,17 +57,17 @@ is_local = true
 
 [node name="Seat1" parent="Seats" instance=ExtResource("4_seat")]
 seat_index = 1
-character = "bunny"
-character_height = 1.08
+character = "temel"
+character_height = 0.95
 
 [node name="Seat2" parent="Seats" instance=ExtResource("4_seat")]
 seat_index = 2
-character = "panda"
+character = "sabri"
 character_height = 0.95
 
 [node name="Seat3" parent="Seats" instance=ExtResource("4_seat")]
 seat_index = 3
-character = "dinosaur"
+character = "rifki"
 character_height = 0.95
 
 [node name="FocusCamera" type="Camera3D" parent="."]

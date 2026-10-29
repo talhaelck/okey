@@ -7,6 +7,9 @@ static var fullscreen := false
 static var companion := "sabri"
 static var cast := "Dayılar"
 static var cloth := "Bordo"
+static var venue := "KIRAATHANE"
+static var table_mode := "4 KİŞİ"
+static var tile_speed := "NORMAL"
 
 static func restore() -> void:
 	var config := ConfigFile.new()
@@ -17,6 +20,9 @@ static func restore() -> void:
 		companion = str(config.get_value("table","companion","sabri"))
 		cast = str(config.get_value("table","cast","Dayılar"))
 		cloth = str(config.get_value("table","cloth","Bordo"))
+		venue = str(config.get_value("table","venue","KIRAATHANE"))
+		table_mode = str(config.get_value("table","table_mode","4 KİŞİ"))
+		tile_speed = str(config.get_value("table","tile_speed","NORMAL"))
 	if not companion in MascotCharacter.KINDS and not companion in CafePatron.KINDS:
 		companion = "sabri"
 	apply()
@@ -33,4 +39,7 @@ static func save() -> void:
 	config.set_value("table","companion",companion)
 	config.set_value("table","cast",cast)
 	config.set_value("table","cloth",cloth)
+	config.set_value("table","venue",venue)
+	config.set_value("table","table_mode",table_mode)
+	config.set_value("table","tile_speed",tile_speed)
 	config.save("user://coffeehouse.cfg")

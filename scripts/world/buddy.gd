@@ -1,7 +1,6 @@
 class_name Buddy
 extends Node3D
-## Animated character in an opponent seat: authored mascots or legacy CC0 glTF models.
-## Visual only: Watcher decides where it looks and when it reacts. Faces the table along -Z when idle.
+## Animated character in an opponent seat: authored patrons/mascots with 3D speech bubbles & reactions.
 
 const TURN_TIME := 0.3
 const MAX_TURN := 1.75
@@ -10,6 +9,8 @@ var _anim: AnimationPlayer
 var _idle := ""
 var _tween: Tween
 var _alert := Label3D.new()
+var _speech := Label3D.new()
+var _speech_tween: Tween
 var _mascot: MascotCharacter
 var _patron: CafePatron
 
@@ -26,6 +27,7 @@ func setup(model: String, height: float) -> void:
 	else:
 		_setup_imported(model, height)
 	_setup_alert(height)
+	_setup_speech(height)
 
 
 func _setup_imported(model: String, height: float) -> void:
@@ -45,15 +47,41 @@ func _setup_imported(model: String, height: float) -> void:
 
 func _setup_alert(height: float) -> void:
 	_alert.text = "!"
-	_alert.font_size = 160
-	_alert.pixel_size = 0.001
-	_alert.modulate = Color(1.0, 0.85, 0.1)
-	_alert.outline_size = 36
-	_alert.outline_modulate = Color(0.25, 0.1, 0.05)
+	_alert.font_size = 64
+	_alert.pixel_size = 0.00075
+	_alert.modulate = Color(1.0, 0.82, 0.12)
+	_alert.outline_size = 16
+	_alert.outline_modulate = Color(0.25, 0.08, 0.04)
 	_alert.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	_alert.position = Vector3(0, height + 0.15, 0)
+	_alert.position = Vector3(0, height + 0.10, 0)
 	_alert.visible = false
 	add_child(_alert)
+
+
+func _setup_speech(height: float) -> void:
+	_speech.text = ""
+	_speech.font_size = 32
+	_speech.pixel_size = 0.00075
+	_speech.modulate = Color("fff2d6")
+	_speech.outline_size = 12
+	_speech.outline_modulate = Color(0.12, 0.07, 0.04, 0.95)
+	_speech.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_speech.position = Vector3(0, height + 0.16, 0)
+	_speech.visible = false
+	add_child(_speech)
+
+
+func say(line: String, duration := 2.6, color := Color("fff2d6")) -> void:
+	_speech.text = line
+	_speech.modulate = color
+	_speech.visible = true
+	_speech.scale = Vector3.ONE * 0.75
+	if _speech_tween:
+		_speech_tween.kill()
+	_speech_tween = create_tween()
+	_speech_tween.tween_property(_speech, "scale", Vector3.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_speech_tween.tween_interval(duration)
+	_speech_tween.tween_callback(func() -> void: _speech.visible = false)
 
 
 ## Turns toward a world point; amount 0 keeps facing the table, 1 looks straight at it.
@@ -70,9 +98,17 @@ func gesture(suffix: String) -> void:
 	if _patron:
 		if suffix == "No":
 			_patron.react()
+		elif suffix == "Reach":
+			_patron.lean_forward(1.0)
+		elif suffix == "Hit":
+			_patron.flinch_hit()
+		elif suffix == "Wipe":
+			_patron.wipe_spill(4.8)
+		elif suffix == "Laugh":
+			_patron.laugh()
 		return
 	if _mascot:
-		if suffix == "No":
+		if suffix in ["No", "Hit"]:
 			_mascot.react()
 		return
 	var name := _animation(suffix)
@@ -97,7 +133,6 @@ func _turn(yaw: float) -> void:
 	_tween.tween_property(self, "rotation:y", yaw, TURN_TIME)
 
 
-# Animation names carry armature prefixes ("CharacterArmature|Idle"), so match on the suffix.
 func _animation(suffix: String) -> String:
 	for name in _anim.get_animation_list():
 		if name == suffix or name.ends_with("|" + suffix):
