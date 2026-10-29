@@ -52,7 +52,7 @@ const BANTER_LINES := [
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_font.font_names = PackedStringArray(["Segoe UI", "Arial"])
-	_font.font_weight = 600
+	_font.font_weight = 500
 
 	# Sunglasses / effect tint overlay
 	_glasses_tint.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -123,6 +123,10 @@ func _ready() -> void:
 
 	_build_banter()
 	_build_menu()
+	_top_panel.hide()
+	_action_bar.hide()
+	_banter_box.hide()
+	_help_button.hide()
 	get_window().focus_exited.connect(func() -> void:
 		if camera != null and camera.mouse_control and not _menu.visible:
 			open_menu())
@@ -193,8 +197,6 @@ func _build_bottom_bar() -> void:
 		["focus", "Istaka [Boşluk]"],
 		["draw", "Taş Çek [D]"],
 		["sort", "Per Diz [S]"],
-		["knock", "Masaya Vur [Q]"],
-		["blackout", "Şalter [K]"],
 		["finish", "Eli Aç [G]"],
 	]
 	for item in actions:
@@ -315,6 +317,7 @@ func _build_banter() -> void:
 
 
 func _build_menu() -> void:
+	_menu.theme=CafeUi.theme()
 	_menu.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_menu.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(_menu)
@@ -328,27 +331,18 @@ func _build_menu() -> void:
 	panel.offset_right = 265
 	panel.offset_top = -275
 	panel.offset_bottom = 275
-	var skin := StyleBoxFlat.new()
-	skin.bg_color = Color("251a14")
-	skin.border_color = Color(0.67, 0.55, 0.36, 0.28)
-	skin.set_border_width_all(1)
-	skin.set_corner_radius_all(12)
-	skin.content_margin_left = 32
-	skin.content_margin_right = 32
-	skin.content_margin_top = 26
-	skin.content_margin_bottom = 26
-	panel.add_theme_stylebox_override("panel", skin)
+	panel.add_theme_stylebox_override("panel",CafeUi.panel())
 	_menu.add_child(panel)
 	var stack := VBoxContainer.new()
 	stack.add_theme_constant_override("separation", 18)
 	panel.add_child(stack)
-	var title := _text("Okey Kıraathane", 27, Color("f2d3a0"))
+	var title := _text("Masa arası", 26, CafeUi.INK)
 	stack.add_child(title)
 	stack.add_child(HSeparator.new())
 	stack.add_child(_pause_page)
 	stack.add_child(_help_page)
 	_pause_page.add_theme_constant_override("separation", 14)
-	_pause_page.add_child(_text("Oyun duraklatıldı", 15, Color("9daba3")))
+	_pause_page.add_child(_text("Oyun duraklatıldı", 14, CafeUi.MUTED))
 	_style_label(_score, 14, Color("aaa58f"))
 	_pause_page.add_child(_score)
 	_resume_button.text = "Oyuna dön"
@@ -356,41 +350,39 @@ func _build_menu() -> void:
 	_resume_button.pressed.connect(close_menu)
 	_pause_page.add_child(_resume_button)
 	var controls := Button.new()
-	controls.text = "Kontroller & Sabotaj Rehberi"
+	controls.text = "Nasıl oynanır"
 	_style_button(controls)
 	controls.pressed.connect(func() -> void: open_menu(true))
 	_pause_page.add_child(controls)
 	var home_button := Button.new()
-	home_button.text = "Ana menü · masadan ayrıl"
+	home_button.text = "Ana menü"
 	_style_button(home_button)
 	home_button.pressed.connect(func() -> void:
 		get_tree().paused = false
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		get_tree().change_scene_to_file("res://scenes/coffeehouse.tscn"))
 	_pause_page.add_child(home_button)
-	var quit_button := Button.new()
-	quit_button.text = "Oyundan çık"
-	_style_button(quit_button)
-	quit_button.pressed.connect(func() -> void: get_tree().quit())
-	_pause_page.add_child(quit_button)
 	_help_page.add_theme_constant_override("separation", 8)
-	_help_page.add_child(_text("Kontroller & Sabotajlar", 18, Color("e0d3b8")))
+	_help_page.add_child(_text("Nasıl oynanır", 18, Color("e0d3b8")))
 	var help_rows := [
-		["Fare + WASD", "Etrafa bak & masaya doğru eğil"],
-		["Space / Sağ Tık", "Masa Görünümü ↔ Istaka Görünümü"],
-		["Sol Tık (Masa)", "Çay/Kahve iç, Çay devir, Leblebi at, Duman üfle"],
-		["Sol Tık (Taş)", "Ortadan/Yandan taş çek, Rakip ıstakasından çal"],
-		["D / F", "Hızlı taş çek [D] · Üzerindeki taşı sağa at [F]"],
-		["S / G", "Taşları diz [S] · Eli aç / Okey bitir [G]"],
-		["Q / K", "Masaya vur [Q] · Karanlıkta Okey şalteri [K]"],
-		["1 - 6 / Tab", "Muhabbet replikleri · Fare imlecini serbest bırak"],
+		["Fare", "Etrafa bak"],
+		["Space / Sağ tık", "Istakaya odaklan"],
+		["Sol tık", "Taş al, taşı ve bırak"],
+		["Çay: Sol tık / E", "Rakibin çayını devir; ıstakası kısa süre açılır"],
+		["D / F", "Taş çek / taş at"],
+		["S / G", "Taşları diz / eli bitir"],
+		["Esc / F1", "Duraklat / bu rehberi aç"],
 	]
 	for row in help_rows:
 		var line := HBoxContainer.new()
-		var key := _text(row[0], 13, Color("d2b47e"))
+		var key := _text(row[0], 15, CafeUi.ACCENT)
 		key.custom_minimum_size.x = 145
 		line.add_child(key)
-		line.add_child(_text(row[1], 13, Color("b9c0b8")))
+		var description := _text(row[1],16,CafeUi.MUTED)
+		description.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+		description.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+		line.custom_minimum_size.y=40
+		line.add_child(description)
 		_help_page.add_child(line)
 	var back_button := Button.new()
 	back_button.text = "Geri"
@@ -425,8 +417,10 @@ func open_menu(controls := false) -> void:
 	if not _menu.visible:
 		_saved_mouse_mode = Input.mouse_mode
 	_menu.show()
-	_menu_panel.offset_top = -265
-	_menu_panel.offset_bottom = 265
+	_menu_panel.offset_left=-310 if controls else -250
+	_menu_panel.offset_right=310 if controls else 250
+	_menu_panel.offset_top=-290 if controls else -230
+	_menu_panel.offset_bottom=290 if controls else 230
 	_pause_page.visible = not controls
 	_help_page.visible = controls
 	get_tree().paused = true
@@ -445,9 +439,7 @@ func close_menu() -> void:
 	get_tree().paused = false
 	Input.mouse_mode = _saved_mouse_mode
 	show_crosshair(_observe)
-	_hint.visible = not _hint.text.is_empty()
-	_action_bar.show()
-	_help_button.show()
+	_hint.hide()
 
 
 func update_match_hud(turn_text: String, turn_ratio: float, okey_text: String, stats_text: String, mode_text: String, glasses_on: bool) -> void:
@@ -479,7 +471,7 @@ func set_hint(value: String) -> void:
 	if _hint.text == text:
 		return
 	_hint.text = text
-	_hint.visible = not _menu.visible and not text.is_empty()
+	_hint.hide()
 	if _hint_tween:
 		_hint_tween.kill()
 	_hint_tween = create_tween()
@@ -491,7 +483,8 @@ func set_score(stolen: int, caught: int) -> void:
 
 
 func flash(text: String, color: Color) -> void:
-	_flash.text = text
+	_flash.hide()
+	_flash.text = ""
 	_flash.label_settings.font_color = color.lerp(Color("f5ebd6"), 0.35)
 	if _flash_tween:
 		_flash_tween.kill()
@@ -541,14 +534,6 @@ func _place(label: Label, size: int, anchors: Vector4, offsets: Vector4) -> void
 
 
 func _style_button(button: Button) -> void:
-	button.custom_minimum_size.y = 42
-	button.add_theme_font_override("font", _font)
-	button.add_theme_font_size_override("font_size", 15)
-	button.add_theme_color_override("font_color", Color("d8d6c9"))
-	for state in ["normal", "hover", "pressed", "focus"]:
-		var style := StyleBoxFlat.new()
-		style.bg_color = Color("3b291e") if state == "normal" else Color("644329")
-		style.set_corner_radius_all(6)
-		style.border_color = Color(0.65, 0.57, 0.39, 0.6 if state == "focus" else 0.15)
-		style.set_border_width_all(1)
-		button.add_theme_stylebox_override(state, style)
+	button.custom_minimum_size.y=46
+	button.add_theme_font_override("font",_font)
+	CafeUi.button(button,button==_resume_button)

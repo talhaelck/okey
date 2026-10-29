@@ -13,6 +13,7 @@ var _speech := Label3D.new()
 var _speech_tween: Tween
 var _mascot: MascotCharacter
 var _patron: CafePatron
+var _rigged: RiggedPatron
 
 
 func setup(model: String, height: float) -> void:
@@ -24,6 +25,10 @@ func setup(model: String, height: float) -> void:
 		_patron = CafePatron.new()
 		add_child(_patron)
 		_patron.build(model)
+	elif model in RiggedPatron.KINDS:
+		_rigged = RiggedPatron.new()
+		add_child(_rigged)
+		_rigged.build(model)
 	else:
 		_setup_imported(model, height)
 	_setup_alert(height)
@@ -46,7 +51,7 @@ func _setup_imported(model: String, height: float) -> void:
 
 
 func _setup_alert(height: float) -> void:
-	_alert.text = "!"
+	_alert.text = ""
 	_alert.font_size = 64
 	_alert.pixel_size = 0.00075
 	_alert.modulate = Color(1.0, 0.82, 0.12)
@@ -72,7 +77,7 @@ func _setup_speech(height: float) -> void:
 
 
 func say(line: String, duration := 2.6, color := Color("fff2d6")) -> void:
-	_speech.text = line
+	_speech.text = ""
 	_speech.modulate = color
 	_speech.visible = true
 	_speech.scale = Vector3.ONE * 0.75
@@ -95,6 +100,9 @@ func look_home() -> void:
 
 
 func gesture(suffix: String) -> void:
+	if _rigged:
+		_rigged.gesture(suffix)
+		return
 	if _patron:
 		if suffix == "No":
 			_patron.react()
@@ -121,6 +129,9 @@ func set_alert(on: bool) -> void:
 
 
 func _turn(yaw: float) -> void:
+	if _rigged:
+		_rigged.turn_head(yaw, TURN_TIME)
+		return
 	if _patron:
 		_patron.turn_head(yaw)
 		return

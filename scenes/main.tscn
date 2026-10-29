@@ -1,7 +1,7 @@
 [gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
-[ext_resource type="Script" path="res://scripts/world/cinematic_coffeehouse.gd" id="2_room"]
+[ext_resource type="Script" path="res://scripts/world/calm_coffeehouse.gd" id="2_room"]
 [ext_resource type="PackedScene" path="res://scenes/table.tscn" id="3_table"]
 [ext_resource type="PackedScene" path="res://scenes/seat.tscn" id="4_seat"]
 [ext_resource type="Script" path="res://scripts/camera/focus_camera.gd" id="5_camera"]

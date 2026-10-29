@@ -1,0 +1,26 @@
+extends SceneTree
+func _initialize():call_deferred("run")
+func run():
+	var menu=load("res://scenes/coffeehouse.tscn").instantiate();root.add_child(menu)
+	var buttons=menu.root_ui.find_children("*","Button",true,false)
+	assert(buttons.size()==4)
+	assert(buttons.map(func(b):return b.text)==["Oyna","Karakterler","Ayarlar","Çıkış"])
+	menu._settings()
+	assert(menu._screen=="settings")
+	var sliders=menu.root_ui.find_children("*","HSlider",true,false)
+	assert(sliders.size()==2)
+	for s in sliders:assert(s.value_changed.get_connections().size()==1)
+	menu._characters();assert(menu._preview_stage!=null)
+	assert(menu.root_ui.find_children("*","ProgressBar",true,false).is_empty())
+	menu._home()
+	for s in menu.game.seats.slice(1):
+		var p=s.buddy._rigged
+		assert(absf(p.bone_local("HeadTop_End").y-p.bone_local("Hips").y-RiggedPatron.SEATED_UPPER_HEIGHT)<.002)
+	buttons=menu.root_ui.find_children("*","Button",true,false)
+	buttons[0].pressed.emit()
+	assert(menu._screen=="play" and not menu.layer.visible)
+	assert(menu.game.process_mode==Node.PROCESS_MODE_INHERIT)
+	assert(CafePreferences.table_mode=="4 KİŞİ")
+	menu.game.hud.open_menu();assert(paused)
+	menu.game.hud.close_menu();assert(not paused)
+	menu.free();print("MENU_FLOW: PASS");quit()

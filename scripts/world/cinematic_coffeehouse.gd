@@ -1,10 +1,10 @@
 extends Node3D
 ## Authentic 3-bay Turkish Kahvehane (Kıraathane) interior.
 ## Left Bay: Çay Ocağı with Copper Hood, Marble Counter & Kazanlı Semaver.
-## Center Bay: Framed Turkish Flag, "DOSTLUK · MUHABBET · OKEY" plaque, Pendulum Clock & Cast-Iron Stove.
+## Center Bay: Framed Turkish Flag, Bosphorus print, Pendulum Clock & Cast-Iron Stove.
 ## Right Bay: Arched Galata/Bosphorus Window with Burgundy Velvet Drapes & Corner Tüplü TV.
 
-const INTERIOR := preload("res://assets/models/environment/muhabbet_interior.glb")
+const INTERIOR := preload("res://assets/models/environment/muhabbet_surfacepass.glb")
 const FLAG := preload("res://assets/decor/turkish_flag.svg")
 const TILE := preload("res://assets/decor/iznik_tile.svg")
 const NAZAR := preload("res://assets/decor/nazar.svg")
@@ -14,7 +14,9 @@ const PRINT := preload("res://assets/decor/bosphorus_print.svg")
 var _brass := SurfaceStyle.metal(Color("a5804d"), 0.42)
 var _wood := SurfaceStyle.textured(Color("463326"))
 var _room_lights: Array[Dictionary] = []
+var _interior_emissives: Array[Dictionary] = []
 var _bulb_mat: StandardMaterial3D
+var _reflection_probe: ReflectionProbe
 
 
 func set_blackout(darkness: float) -> void:
@@ -24,16 +26,35 @@ func set_blackout(darkness: float) -> void:
 		var base_e: float = entry["energy"]
 		if is_instance_valid(l):
 			l.light_energy = base_e * mult
+	for entry in _interior_emissives:
+		var m: StandardMaterial3D = entry["mat"]
+		var base_e: float = entry["base_energy"]
+		m.emission_energy_multiplier = base_e * mult
 	if _bulb_mat:
-		_bulb_mat.emission_energy_multiplier = 3.2 * mult
+		_bulb_mat.emission_energy_multiplier = 0.85 * mult
+	if _reflection_probe:
+		_reflection_probe.intensity = 0.55 * mult
 
 
 func _ready() -> void:
 	var interior := INTERIOR.instantiate()
 	add_child(interior)
+	CoffeehouseMaterials.apply_to(interior)
 	for mi: MeshInstance3D in interior.find_children("*", "MeshInstance3D", true, false):
 		if String(mi.name) in ["Interior_night", "Interior_lantern_glass", "Interior_bulb", "Interior_crt_screen"]:
 			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		if String(mi.name) in ["Interior_lantern_glass", "Interior_bulb", "Interior_crt_screen"]:
+			if mi.mesh:
+				for s in mi.mesh.get_surface_count():
+					var sm = mi.mesh.surface_get_material(s)
+					if sm is StandardMaterial3D:
+						var dup: StandardMaterial3D = sm.duplicate()
+						if String(mi.name) == "Interior_crt_screen":
+							dup.emission_energy_multiplier *= 0.16
+						if String(mi.name) == "Interior_lantern_glass":
+							dup.emission_energy_multiplier *= 0.25
+						mi.set_surface_override_material(s, dup)
+						_interior_emissives.append({"mat": dup, "base_energy": dup.emission_energy_multiplier})
 		if String(mi.name) == "Interior_night":
 			var glass := ShaderMaterial.new()
 			glass.shader = preload("res://assets/shaders/coffeehouse_window.gdshader")
@@ -42,6 +63,17 @@ func _ready() -> void:
 	_decor()
 	_framed_prints()
 	_lighting()
+	_reflection_probe = ReflectionProbe.new()
+	_reflection_probe.name = "RoomReflections"
+	_reflection_probe.position = Vector3(0, 1.55, -0.5)
+	_reflection_probe.size = Vector3(7.0, 3.4, 6.6)
+	_reflection_probe.box_projection = true
+	_reflection_probe.interior = true
+	_reflection_probe.reflection_mask = 2
+	_reflection_probe.intensity = 0.55
+	_reflection_probe.ambient_mode = ReflectionProbe.AMBIENT_DISABLED
+	_reflection_probe.update_mode = ReflectionProbe.UPDATE_ONCE
+	add_child(_reflection_probe)
 	var finish := CanvasLayer.new()
 	finish.layer = -5
 	var overlay := ColorRect.new()
@@ -157,13 +189,14 @@ func _decor() -> void:
 	SurfaceStyle.box(self, Vector3(0.90, 0.60, 0.012), Vector3(0.0, 2.58, -3.052), _brass, 0.003)
 	_image(FLAG, Vector3(0.0, 2.58, -3.042), Vector2(0.86, 0.56))
 
-	# 3. Center Bay Kıraathane Plaque below the flag: "DOSTLUK · MUHABBET · OKEY"
+	# A framed Bosphorus print occupies the former slogan plaque.
 	var motto := Node3D.new()
 	motto.position = Vector3(0.0, 1.92, -3.06)
 	add_child(motto)
 	SurfaceStyle.box(motto, Vector3(0.94, 0.40, 0.038), Vector3.ZERO, _wood, 0.008)
-	SurfaceStyle.box(motto, Vector3(0.88, 0.34, 0.014), Vector3(0, 0, 0.020), Toon.material(Color("5c1818"), 0.85))
-	SurfaceStyle.lettering(motto, "DOSTLUK · MUHABBET\nOKEY", Vector3(0, 0.015, 0.033), 26, 0.0024, Color("f0dbb0"))
+	var print_mesh := _image(PRINT, Vector3.ZERO, Vector2(0.88, 0.34))
+	print_mesh.reparent(motto, false)
+	print_mesh.position = Vector3(0, 0, 0.023)
 
 	# 4. Pendulum Wall Clock Dial & Hands mounted on the walnut clock case at (-0.72, 2.04, -2.99)
 	_clock(Vector3(-0.72, 2.04, -2.995))
@@ -206,15 +239,15 @@ func _lighting() -> void:
 	glow.albedo_color = Color("ffc678")
 	glow.emission_enabled = true
 	glow.emission = Color("ffad48")
-	glow.emission_energy_multiplier = 1.9
+	glow.emission_energy_multiplier = 0.85
 	_bulb_mat = glow
 	SurfaceStyle.part(self, Toon.cylinder(0.115, 0.008), glow, Vector3(0, 1.855, 0))
 
 	# 1. Main Okey Table warm amber pendant spotlight
-	_spot(Vector3(0, 1.84, 0.08), Vector3(0, 0.72, -0.05), Color("ffca85"), 1.48, 66, 4.6, 0.05)
+	_spot(Vector3(0, 1.84, 0.08), Vector3(0, 0.72, -0.05), Color("ffdaad"), 1.25, 66, 4.6, 0.16)
 
 	# 2. Golden-hour / Bosphorus evening light streaming through the Right Bay Arched Window (x = 2.15)
-	_spot(Vector3(2.15, 2.18, -3.55), Vector3(0.35, 0.82, -0.25), Color("ff9e58"), 1.15, 48, 6.5, 0.08)
+	_spot(Vector3(2.15, 2.18, -3.55), Vector3(0.35, 0.82, -0.25), Color("9db4bf"), 0.65, 48, 6.5, 0.12)
 
 	# 3. Warm pendant pools over the two background Kahvehane & Tavla tables
 	for side in [-1, 1]:
@@ -229,14 +262,14 @@ func _lighting() -> void:
 	_spot(Vector3(-2.15, 1.92, -2.25), Vector3(-2.15, 0.95, -2.52), Color("ffbf78"), 0.72, 52, 2.5, 0.08)
 
 	# 6. Cast-Iron Kahvehane Stove glowing fire-grate ember light (Center-Right)
-	_omni(Vector3(0.74, 0.46, -2.35), Color("ff7b32"), 0.52, 2.0)
+	_omni(Vector3(0.74, 0.46, -2.35), Color("ff9c52"), 0.12, 1.2)
 
 	# 7. Center Wall of Honor (Turkish Flag & Motto Plaque) warm accent light
 	_spot(Vector3(0.0, 2.95, -2.25), Vector3(0.0, 2.25, -3.05), Color("f4d4aa"), 0.55, 46, 2.4, 0.08)
 
 	# 8. Soft fill lights for foreground & patrons
-	_omni(Vector3(0, 1.95, -1.65), Color("eec99a"), 0.88, 4.2)
-	_omni(Vector3(0, 1.55, 1.85), Color("e4cca8"), 0.44, 3.4)
+	_omni(Vector3(0, 1.95, -1.65), Color("eec99a"), 0.58, 4.2)
+	_omni(Vector3(0, 1.55, 1.85), Color("e4cca8"), 0.34, 3.4)
 
 
 func _framed_prints() -> void:

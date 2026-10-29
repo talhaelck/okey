@@ -21,12 +21,15 @@ var _tiles := Node3D.new()
 var _slots: Array[Tile] = []
 var _slot_markers: Array[MeshInstance3D] = []
 var _active_slot_preview := -1
+var _closed_position := Vector3.ZERO
 var _steal_glow_mat := StandardMaterial3D.new()
 
 
 func _ready() -> void:
+	_closed_position=position
 	var rack_glb: Node3D = load("res://assets/models/table_details/okey_rack.glb").instantiate()
 	rack_glb.name = "OkeyRackModel"
+	CoffeehouseMaterials.apply_to(rack_glb)
 	add_child(rack_glb)
 	add_child(_tiles)
 	_slots.resize(ROWS * SLOTS)
@@ -77,9 +80,12 @@ func tilt_open(duration := 3.5) -> void:
 	if _tilt_tween:
 		_tilt_tween.kill()
 	_tilt_tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	_tilt_tween.tween_property(self, "rotation:x", deg_to_rad(-24.0), 0.26)
+	_tilt_tween.tween_property(self, "rotation:x", deg_to_rad(-68.0), 0.26)
+	# Lift the rear support by its rotated depth, keeping it above the felt.
+	_tilt_tween.parallel().tween_property(self,"position",_closed_position+Vector3.UP*.059,0.26)
 	_tilt_tween.tween_interval(duration)
 	_tilt_tween.chain().set_trans(Tween.TRANS_SINE).tween_property(self, "rotation:x", 0.0, 0.32)
+	_tilt_tween.parallel().tween_property(self,"position",_closed_position,0.32)
 
 
 func update_opponent_steal_visuals(can_steal: bool, reveal_faces: bool, _owner_name: String, _state_txt: String) -> void:

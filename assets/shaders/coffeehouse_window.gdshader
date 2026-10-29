@@ -2,6 +2,8 @@ shader_type spatial;
 render_mode unshaded, cull_disabled;
 
 varying vec3 room_position;
+uniform vec3 horizontal_axis = vec3(1.0,0.0,0.0);
+uniform float horizontal_origin = 2.20;
 
 float hash(float n) {
 	return fract(sin(n * 127.1) * 43758.5453);
@@ -19,7 +21,7 @@ void vertex() {
 }
 
 void fragment() {
-	float u = (room_position.x - 2.20);
+	float u = dot(room_position,horizontal_axis) - horizontal_origin;
 	float y = room_position.y;
 
 	// Rich Istanbul evening / dusk sky gradient (warm amber-crimson horizon -> deep indigo night sky)

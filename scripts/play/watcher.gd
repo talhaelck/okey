@@ -1,8 +1,8 @@
 class_name Watcher
 extends Node
-## Opponent brain: studies its own rack, glances at players, reacts to tea spills, flying leblebis, smoke, and blackouts.
+## Opponent brain: studies its own rack, glances at players, reacts to tea spills.
 
-enum State { RACK, HINT, LOOK, DISTRACTED, WIPING }
+enum State { RACK, HINT, LOOK, WIPING }
 
 const HINT_TIME := 0.55
 const LOOK_TIME := Vector2(1.2, 2.3)
@@ -13,7 +13,7 @@ var seat: Seat
 var local_seat: Seat
 var others: Array[Seat] = []
 var target: Seat
-var vision_multiplier := 1.0 # Modified by smoke clouds, blackout, or sunglasses
+var vision_multiplier := 1.0
 
 var _state := State.RACK
 var _timer := 0.0
@@ -38,13 +38,13 @@ func _process(delta: float) -> void:
 		State.LOOK:
 			seat.buddy.look_home()
 			_set_state(State.RACK, randf_range(RACK_TIME.x, RACK_TIME.y))
-		State.DISTRACTED, State.WIPING:
+		State.WIPING:
 			seat.buddy.look_home()
 			_set_state(State.RACK, randf_range(1.4, 2.5))
 
 
 func is_watching(other: Seat) -> bool:
-	if _state == State.WIPING or _state == State.DISTRACTED:
+	if _state == State.WIPING:
 		return false
 	return _state == State.LOOK and target == other
 
@@ -58,15 +58,6 @@ func can_see(point: Vector3, owner: Seat) -> bool:
 	var max_dist := 2.6 * clampf(vision_multiplier, 0.25, 1.2)
 	var fov_deg := 55.0 * clampf(vision_multiplier, 0.35, 1.0)
 	return direction.length() < max_dist and forward.dot(direction.normalized()) > cos(deg_to_rad(fov_deg))
-
-
-func distract(point: Vector3, duration := 2.2) -> void:
-	if _state == State.WIPING:
-		return
-	seat.buddy.look_toward(point)
-	if is_instance_valid(seat.rack):
-		seat.rack.tilt_open(duration)
-	_set_state(State.DISTRACTED, duration)
 
 
 func spill_distract(duration := 5.2) -> void:
@@ -83,27 +74,10 @@ func spill_distract(duration := 5.2) -> void:
 	_set_state(State.WIPING, duration)
 
 
-func hit_by_leblebi() -> void:
-	seat.buddy.gesture("Hit")
-	if is_instance_valid(seat.rack):
-		seat.rack.tilt_open(3.0)
-	var lines := [
-		"Kim attı lan o leblebiyi?!",
-		"Ula kafama çerez geldi!",
-		"Sabri sen mi attın lan?!",
-		"Doğru oynayın ula çocuk musunuz!",
-	]
-	seat.buddy.say(lines.pick_random(), 3.2, Color("ffd278"))
-	var blame: Seat = others.pick_random() if not others.is_empty() else local_seat
-	seat.buddy.look_toward(blame.head_anchor.global_position)
-	_set_state(State.DISTRACTED, 4.5)
-
-
 func attention_text() -> String:
 	match _state:
 		State.RACK: return "ıstakasında"
 		State.HINT: return "başını çeviriyor"
-		State.DISTRACTED: return "dikkati dağıldı"
 		State.WIPING: return "çayı siliyor!"
 		State.LOOK: return "SANA BAKIYOR" if target == local_seat else "başka yöne bakıyor"
 	return ""

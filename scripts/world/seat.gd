@@ -13,6 +13,9 @@ const PATRON_NAMES := {
 	"temel": "Temel Reis",
 	"rifki": "Rıfkı Amca",
 	"davut": "Davut Usta",
+	"gozluklu": "Nihat Dayı",
+	"tespihli": "Cemil Dayı",
+	"yasli": "Hamdi Amca",
 }
 
 @export var seat_index := 0
@@ -29,7 +32,7 @@ var glove: MeshInstance3D
 var left_hand: MeshInstance3D
 var _arm_meshes: Array[MeshInstance3D] = []
 var _hands: Array[MeshInstance3D] = []
-var _knock_tween: Tween
+var _left_reach_tween: Tween
 var _left_rest := Vector3.ZERO
 
 
@@ -44,7 +47,7 @@ func _ready() -> void:
 	rotation.y = seat_index * PI * 0.5
 	rack = Rack.new()
 	rack.is_opponent = not is_local
-	rack.position = Vector3(0, Table.TOP, 0.57) if is_local else Vector3(0, Table.TOP, RACK_DISTANCE)
+	rack.position = Vector3(0, Table.TOP, RACK_DISTANCE)
 	add_child(rack)
 	_build_chair()
 	if is_local:
@@ -62,6 +65,7 @@ func _ready() -> void:
 func _build_chair() -> void:
 	var chair_glb: Node3D = load("res://assets/models/table_details/kiraathane_chair.glb").instantiate()
 	chair_glb.name = "KiraathaneChair"
+	CoffeehouseMaterials.apply_to(chair_glb)
 	chair_glb.position = Vector3(0, 0, CHAIR_DISTANCE)
 	add_child(chair_glb)
 
@@ -72,6 +76,9 @@ func _build_hands() -> void:
 		"rifki": Color("4e321e"),
 		"temel": Color("2e4228"),
 		"davut": Color("1e3450"),
+		"gozluklu": Color("77969f"),
+		"tespihli": Color("e0d5b8"),
+		"yasli": Color("8a7356"),
 	}
 	var sleeve_mat := SurfaceStyle.textured(sleeve_colors.get(character, Color("82151d")), SurfaceStyle.Kind.FABRIC)
 	for side in [-1, 1]:
@@ -147,33 +154,19 @@ func _process(_delta: float) -> void:
 		_arm_meshes[i].scale = Vector3(1,direction.length(),1)
 
 
-func knock_table() -> void:
-	if _hands.is_empty():
-		return
-	if _knock_tween:
-		_knock_tween.kill()
-	var left := _hands[0]
-	_knock_tween = create_tween()
-	_knock_tween.tween_property(left,"position",_left_rest+Vector3(0,0.06,-0.04),0.10)
-	_knock_tween.tween_property(left,"position",_left_rest+Vector3(0,-0.018,-0.04),0.055)
-	_knock_tween.tween_property(left,"position",_left_rest+Vector3(0,0.025,-0.04),0.055)
-	_knock_tween.tween_property(left,"position",_left_rest+Vector3(0,-0.018,-0.04),0.055)
-	_knock_tween.tween_property(left,"position",_left_rest,0.18)
-
-
 ## Animates the local player's left hand reaching out to touch/interact with a prop on the table.
 func animate_left_reach(world_target: Vector3, hold_time := 0.18) -> void:
 	if _hands.is_empty():
 		return
-	if _knock_tween:
-		_knock_tween.kill()
+	if _left_reach_tween:
+		_left_reach_tween.kill()
 	var left := _hands[0]
 	var local_target := to_local(world_target)
 	local_target.y = maxf(Table.TOP + 0.04, local_target.y)
-	_knock_tween = create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	_knock_tween.tween_property(left, "position", local_target, 0.16)
-	_knock_tween.tween_interval(hold_time)
-	_knock_tween.tween_property(left, "position", _left_rest, 0.24)
+	_left_reach_tween = create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_left_reach_tween.tween_property(left, "position", local_target, 0.16)
+	_left_reach_tween.tween_interval(hold_time)
+	_left_reach_tween.tween_property(left, "position", _left_rest, 0.24)
 
 
 func _marker(pos: Vector3, target: Vector3) -> Marker3D:

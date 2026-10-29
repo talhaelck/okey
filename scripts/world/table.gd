@@ -1,7 +1,7 @@
 class_name Table
 extends Node3D
 ## Blender-authored walnut okey table with inset felt, 4 discard zones, center draw pile,
-## and fully interactive kahvehane props (tea glasses, coffee, leblebi bowl, ashtray, tespih, sunglasses, magnifier, yazboz).
+## and a clear playing surface. Tea props remain available in source only.
 
 const TOP := 0.75 # height of the felt surface
 const SIDE_TOP := 0.68 # height of the kahvehane side tea tables (yan sehpalar)
@@ -54,9 +54,9 @@ var _baize_mat: ShaderMaterial
 func set_felt_style(cloth_name: String) -> void:
 	if _baize_mat == null:
 		return
-	var c := Color("123f26") # Authentic deep Anatolian emerald green
+	var c := Color("2c4940") # Quiet, slightly worn green baize.
 	if cloth_name == "Bordo":
-		c = Color("4c1418") # Authentic rich kahvehane burgundy
+		c = Color("56383a")
 	elif cloth_name == "Mavi":
 		c = Color("142b4a") # Royal midnight blue
 	_baize_mat.set_shader_parameter("felt_color", c)
@@ -64,8 +64,9 @@ func set_felt_style(cloth_name: String) -> void:
 
 func _ready() -> void:
 	var felt := SIZE - RIM * 2.0
-	var table_glb: Node3D = load("res://assets/models/table_details/okey_table.glb").instantiate()
+	var table_glb: Node3D = load("res://assets/models/table_details/okey_table_joined.glb").instantiate()
 	table_glb.name = "OkeyTableModel"
+	CoffeehouseMaterials.apply_to(table_glb)
 	add_child(table_glb)
 
 	_baize_mat = ShaderMaterial.new()
@@ -85,8 +86,6 @@ func _ready() -> void:
 	_contest_highlight.grow = true
 	_contest_highlight.grow_amount = 0.0042
 
-	_build_side_tables()
-	_build_discard_markers()
 	_build_interactive_props()
 
 	add_child(_pile)
@@ -176,58 +175,25 @@ func set_turn_guides(is_draw_phase: bool, holding_from_rack: bool) -> void:
 
 
 func _build_interactive_props() -> void:
-	# Seat 0's tea glass sits on the Left Side Table (Yan Sehpa); opponents' tea glasses sit near their corners
+	# Only three opponent glasses: the remaining tabletop distraction is tea spilling.
 	var tea_configs := [
-		{"id": "tea_0", "pos": Vector3(-0.72, SIDE_TOP, 0.64), "yaw": -0.15, "seat": 0,
-			"hint": "Sol tık: Çay Yudumla (Sakinleş)  ·  [E] Çayı Devir"},
-		{"id": "tea_1", "pos": Vector3(0.61, TOP + 0.028, 0.24), "yaw": 0.40, "seat": 1,
-			"hint": "Sol tık: Temel'in Çayını Devir! (Sabotaj)"},
-		{"id": "tea_2", "pos": Vector3(0.24, TOP + 0.028, -0.61), "yaw": -0.55, "seat": 2,
-			"hint": "Sol tık: Sabri'nin Çayını Devir! (Sabotaj)"},
-		{"id": "tea_3", "pos": Vector3(-0.61, TOP + 0.028, -0.24), "yaw": 0.25, "seat": 3,
-			"hint": "Sol tık: Rıfkı'nın Çayını Devir! (Sabotaj)"},
+		{"id": "tea_1", "pos": Vector3(0.64, TOP + 0.008, -0.29), "yaw": 0.40, "seat": 1,
+			"hint": "Sol tık / E: Çayı devir"},
+		{"id": "tea_2", "pos": Vector3(-0.29, TOP + 0.008, -0.64), "yaw": -0.55, "seat": 2,
+			"hint": "Sol tık / E: Çayı devir"},
+		{"id": "tea_3", "pos": Vector3(-0.64, TOP + 0.008, 0.29), "yaw": 0.25, "seat": 3,
+			"hint": "Sol tık / E: Çayı devir"},
 	]
 	for cfg in tea_configs:
 		var node := _details("ince_belli_tea", cfg["pos"], cfg["yaw"])
-		_spawn_vapor(cfg["pos"] + Vector3(0, 0.095, 0), Color(0.96, 0.92, 0.86, 0.16), 0.018)
-		_register_prop(cfg["id"], node, cfg["pos"], 0.09, cfg["hint"], {"seat": cfg["seat"], "spilled": false, "home_pos": cfg["pos"], "home_rot": node.rotation})
-
-	# Turkish Coffee cup (on Right Side Table / Sağ Yan Sehpa)
-	var coffee_pos := Vector3(0.72, SIDE_TOP, 0.64)
-	var coffee_node := _details("turkish_coffee", coffee_pos, 0.25)
-	_spawn_vapor(coffee_pos + Vector3(0, 0.070, 0), Color(0.95, 0.90, 0.84, 0.13), 0.014)
-	_register_prop("coffee", coffee_node, coffee_pos, 0.09, "Sol tık: Türk Kahvesi İç (Odak & Hız)  ·  [E] Telve Sıçrat", {"home_pos": coffee_pos})
-
-	# Tespih (on Left Side Table / Sol Yan Sehpa)
-	var tespih_pos := Vector3(-0.82, SIDE_TOP, 0.75)
-	var tespih_node := _details("cherry_tespih", tespih_pos, 0.2)
-	_register_prop("tespih", tespih_node, tespih_pos, 0.09, "Sol tık: Tesbih Çek / Salla (Racon Kes)", {"home_pos": tespih_pos})
-
-	# Leblebi Bowl (left rim of main table)
-	var leblebi_pos := Vector3(-0.61, TOP + 0.028, 0.14)
-	var leblebi_node := _details("leblebi_bowl", leblebi_pos, 0.0)
-	_register_prop("leblebi", leblebi_node, leblebi_pos, 0.095, "Sol tık: Rakibe Leblebi Fırlat! (Dikkat Dağıt)", {})
-
-	# Cut-Glass Ashtray (right rim of main table)
-	var ash_pos := Vector3(0.61, TOP + 0.028, -0.14)
-	var ash_node := _details("cut_glass_ashtray", ash_pos, 0.0)
-	_spawn_vapor(ash_pos + Vector3(0.01, 0.024, 0.0), Color(0.78, 0.80, 0.85, 0.14), 0.012)
-	_register_prop("ashtray", ash_node, ash_pos, 0.09, "Sol tık: Duman Üfle! (6 sn Sis Perdesi)", {})
-
-	# Yazboz Score Pad (on Right Side Table / Sağ Yan Sehpa)
-	var yazboz_pos := Vector3(0.83, SIDE_TOP, 0.75)
-	var yazboz_node := _details("yazboz_pad", yazboz_pos, -0.18)
-	_register_prop("yazboz", yazboz_node, yazboz_pos, 0.095, "Sol tık: Yazboz Defteri (Per & Skor Durumu)", {})
-
-	# Special Accessory 1: Kabadayı Sunglasses (on Right Side Table / Sağ Yan Sehpa)
-	var glasses_pos := Vector3(0.73, SIDE_TOP + 0.004, 0.79)
-	var glasses_node := _build_sunglasses(glasses_pos)
-	_register_prop("glasses", glasses_node, glasses_pos, 0.09, "Sol tık: Kabadayı Gözlüğü Tak/Çıkar (Şüphe Azaltır & Okey Parlar)", {})
-
-	# Special Accessory 2: Brass Magnifying Glass (on Left Side Table / Sol Yan Sehpa)
-	var mag_pos := Vector3(-0.71, SIDE_TOP + 0.003, 0.80)
-	var mag_node := _build_magnifier(mag_pos)
-	_register_prop("magnifier", mag_node, mag_pos, 0.09, "Sol tık: Büyüteçle Rakip Taşlarını Dikizle", {"home_pos": mag_pos, "home_rot": mag_node.rotation})
+		var cup := Node3D.new()
+		cup.name="CupPivot"
+		cup.position.y=.014
+		node.add_child(cup)
+		for part in node.find_children("*","MeshInstance3D",true,false):
+			if part.name.begins_with("Thin tulip glass") or part.name.begins_with("Amber tea"):
+				part.reparent(cup)
+		_register_prop(cfg["id"], node, cfg["pos"], 0.09, cfg["hint"], {"seat": cfg["seat"], "spilled": false, "home_pos": cfg["pos"], "home_rot": node.rotation,"cup":cup,"cup_home":cup.position})
 
 
 func _build_sunglasses(pos: Vector3) -> Node3D:
@@ -369,18 +335,22 @@ func spill_tea(prop_id: String) -> int:
 	var p := find_prop(prop_id)
 	if p.is_empty():
 		return -1
-	var node: Node3D = p["node"]
+	if p["meta"].get("spilled",false):
+		return -1
+	var node: Node3D = p["meta"]["cup"]
 	var seat_idx: int = p["meta"].get("seat", 1)
 	var home: Vector3 = p["meta"].get("home_pos", p["pos"])
+	var cup_home: Vector3 = p["meta"]["cup_home"]
 	p["meta"]["spilled"] = true
 
-	var toward_center := (-home).normalized()
+	var toward_center := Vector3(-home.x,0,-home.z).normalized()
 	var spill_spot := home.lerp(Vector3.ZERO, 0.32)
-	spill_spot.y = home.y + 0.002
+	spill_spot.y = TOP + 0.002
 
 	var tw := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tw.tween_property(node, "position", home + Vector3(toward_center.x * 0.06, -0.008, toward_center.z * 0.06), 0.16)
-	tw.parallel().tween_property(node, "rotation:z", PI * 0.44, 0.16)
+	var local_direction: Vector3 = p["node"].basis.inverse()*toward_center
+	tw.tween_property(node, "position", cup_home+local_direction*.10+Vector3.UP*.011, 0.20)
+	tw.parallel().tween_property(node, "rotation", Vector3(0,atan2(local_direction.z,-local_direction.x),PI*.48), 0.20)
 
 	var puddle := MeshInstance3D.new()
 	var cyl := CylinderMesh.new()
@@ -410,8 +380,8 @@ func spill_tea(prop_id: String) -> int:
 		puddle.queue_free()
 		if is_instance_valid(node):
 			var rtw := create_tween()
-			rtw.tween_property(node, "position", home, 0.25)
-			rtw.parallel().tween_property(node, "rotation", p["meta"]["home_rot"], 0.25)
+			rtw.tween_property(node, "position", cup_home, 0.25)
+			rtw.parallel().tween_property(node, "rotation", Vector3.ZERO, 0.25)
 			p["meta"]["spilled"] = false
 	)
 	return seat_idx
@@ -602,11 +572,13 @@ func _process(delta: float) -> void:
 
 
 func _details(id: String, pos: Vector3, yaw := 0.0) -> Node3D:
-	var prop: Node3D = load("res://assets/models/table_details/%s.glb" % id).instantiate()
+	var path := "res://assets/models/environment/calm_tea_glass.glb" if id == "ince_belli_tea" else "res://assets/models/table_details/%s.glb" % id
+	var prop: Node3D = load(path).instantiate()
 	prop.name = id
 	prop.position = pos
 	prop.rotation.y = yaw
 	add_child(prop)
+	CoffeehouseMaterials.apply_to(prop)
 	for mi: MeshInstance3D in prop.find_children("*", "MeshInstance3D", true, false):
 		for i in mi.mesh.get_surface_count():
 			var mat := mi.mesh.surface_get_material(i)
@@ -706,10 +678,16 @@ func put_discard(seat_idx: int, tile: Tile) -> void:
 	tile.slide_to(Transform3D(Basis(Vector3.UP, yaw) * Basis(Vector3.RIGHT, -PI * 0.5), local_pos), 0.24, 0.055)
 
 
+## Invisible, generous right-hand discard region, shared with the hand preview.
+static func is_in_discard_zone(point: Vector3, seat_index: int = 0) -> bool:
+	var p := point.rotated(Vector3.UP, -posmod(seat_index, 4)*PI*0.5)
+	return p.x >= 0.17 and p.x <= 0.55 and p.z >= 0.09 and p.z <= 0.42
+
+
 ## Lays a tile face up on the felt at a world point; snaps to Seat 0's discard stack only if placed near the right discard tray!
 func put_loose(tile: Tile, point: Vector3, yaw: float) -> bool:
 	var local := to_local(point)
-	if Vector2(local.x - DISCARD_SPOTS[0].x, local.z - DISCARD_SPOTS[0].z).length() < 0.14:
+	if is_in_discard_zone(local):
 		put_discard(0, tile)
 		return true
 	tile.holder = self
@@ -728,7 +706,7 @@ func drop_loose_from_hand(tile: Tile, world_from: Vector3, yaw: float) -> bool:
 	var local := to_local(world_from)
 	local.x = clampf(local.x, -SIZE * 0.44, SIZE * 0.44)
 	local.z = clampf(local.z, -SIZE * 0.44, SIZE * 0.44)
-	if Vector2(local.x - DISCARD_SPOTS[0].x, local.z - DISCARD_SPOTS[0].z).length() < 0.14:
+	if is_in_discard_zone(local):
 		put_discard(0, tile)
 		return true
 	tile.holder = self

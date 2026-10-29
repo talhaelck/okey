@@ -1,18 +1,33 @@
 extends Node
-## Coffeehouse Main Menu, Studio Character Select (Karakter Seç), and Illustrated Lobby (Lobi / Masa Kur)
-## with rich painted artwork textures for the logo emblem, character portraits, and 4 venue cards.
+## Minimal main menu, shared settings, and live character selection.
 
-const CREAM := Color("f4d8a8")
-const GOLD := Color("e2a04a")
-const MUTED := Color("b89b7c")
+const CREAM := CafeUi.INK
+const GOLD := CafeUi.ACCENT
+const MUTED := CafeUi.MUTED
 const DARK_WOOD := Color("24170f")
 
-const LOGO_TEX := preload("res://assets/ui/logo_emblem.png")
-const BANNER_KIRAATHANE := preload("res://assets/ui/venue_banner_kiraathane.png")
 
-const PATRON_ORDER := ["sabri", "rifki", "temel", "davut"]
+const PATRON_ORDER := ["sabri", "rifki", "temel", "davut", "gozluklu", "tespihli", "yasli"]
 
 const PATRON_DATA := {
+	"gozluklu": {
+		"model": "gozluklu", "title": "NİHAT DAYI",
+		"quote": "\"Gözlük var, gözden kaçan taş yok.\"",
+		"portrait": preload("res://assets/ui/portrait_gozluklu.png"),
+		"stats": [["ŞANS", 0.72], ["MUHABBET", 0.66], ["SAKİNLİK", 0.88], ["TİLT", 0.30]],
+	},
+	"tespihli": {
+		"model": "tespihli", "title": "CEMİL DAYI",
+		"quote": "\"Sabırla dizilen taş,\nsonunda yerini bulur.\"",
+		"portrait": preload("res://assets/ui/portrait_tespihli.png"),
+		"stats": [["ŞANS", 0.76], ["MUHABBET", 0.90], ["SAKİNLİK", 0.70], ["TİLT", 0.48]],
+	},
+	"yasli": {
+		"model": "yasli", "title": "HAMDİ AMCA",
+		"quote": "\"Bu masada daha çok çay içersin.\"",
+		"portrait": preload("res://assets/ui/portrait_yasli.png"),
+		"stats": [["ŞANS", 0.82], ["MUHABBET", 0.78], ["SAKİNLİK", 0.94], ["TİLT", 0.18]],
+	},
 	"sabri": {
 		"model": "sabri",
 		"title": "SABRİ DAYI",
@@ -43,33 +58,6 @@ const PATRON_DATA := {
 	},
 }
 
-const VENUES := [
-	{
-		"id": "KIRAATHANE",
-		"sub": "Galata · Sıcak Kehribar",
-		"card_tex": preload("res://assets/ui/venue_kiraathane.png"),
-		"banner_tex": preload("res://assets/ui/venue_banner_kiraathane.png"),
-	},
-	{
-		"id": "SAHİL",
-		"sub": "Boğaz Esintisi · Çay Bahçesi",
-		"card_tex": preload("res://assets/ui/venue_sahil.png"),
-		"banner_tex": preload("res://assets/ui/venue_sahil.png"),
-	},
-	{
-		"id": "DAĞ EVİ",
-		"sub": "Şömine Ateşi · Ahşap Salon",
-		"card_tex": preload("res://assets/ui/venue_dagevi.png"),
-		"banner_tex": preload("res://assets/ui/venue_dagevi.png"),
-	},
-	{
-		"id": "YAZLIK",
-		"sub": "Çardak Altı · Akşamüstü",
-		"card_tex": preload("res://assets/ui/venue_yazlik.png"),
-		"banner_tex": preload("res://assets/ui/venue_yazlik.png"),
-	},
-]
-
 var game: Node3D
 var layer := CanvasLayer.new()
 var root_ui := Control.new()
@@ -80,18 +68,23 @@ var _screen := "home"
 var _selected_card := "sabri"
 var _time := 0.0
 var _preview_stage: Node3D
+var _opponent_order: Array[String] = []
 
 
 func _ready() -> void:
 	CafePreferences.restore()
+	CafePreferences.venue="KIRAATHANE"
+	CafePreferences.table_mode="4 KİŞİ"
 	_selected_card = CafePreferences.companion if PATRON_DATA.has(CafePreferences.companion) else "sabri"
 	_font.font_names = PackedStringArray(["Segoe UI", "Arial"])
-	_font.font_weight = 700
+	_font.font_weight = 500
 	_display.font_names = PackedStringArray(["Georgia", "Cambria", "Arial Black"])
-	_display.font_weight = 800
+	_display.font_weight = 600
 	game = preload("res://scenes/main.tscn").instantiate()
 	game.get_node("FocusCamera").mouse_control = false
 	add_child(game)
+	for seat: Seat in game.seats.slice(1):
+		_opponent_order.append(seat.character)
 	game.hud.hide()
 	game.hud.process_mode = Node.PROCESS_MODE_DISABLED
 	game.process_mode = Node.PROCESS_MODE_DISABLED
@@ -147,6 +140,7 @@ func _build_base_ui() -> void:
 	shade.material = material
 	layer.add_child(shade)
 	root_ui.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	root_ui.theme = CafeUi.theme()
 	root_ui.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(root_ui)
 
@@ -176,109 +170,55 @@ func _label(text: String, size: int, color := CREAM, use_display := false) -> La
 	return label
 
 
-func _wood_button(text: String, action: Callable, primary := false, min_size := Vector2(230, 56), font_sz := 21) -> Button:
+func _wood_button(text: String, action: Callable, primary := false, min_size := Vector2(280,50), font_sz := 18) -> Button:
 	var b := Button.new()
-	b.text = text
-	b.custom_minimum_size = min_size
-	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	b.add_theme_font_override("font", _font)
-	b.add_theme_font_size_override("font_size", font_sz)
-	b.add_theme_color_override("font_color", Color("261509") if primary else CREAM)
-	b.add_theme_color_override("font_hover_color", Color("1b0e05") if primary else Color("fff2d6"))
-	for state in ["normal", "hover", "pressed", "focus"]:
-		var style := StyleBoxFlat.new()
-		if primary:
-			style.bg_color = Color("dead5a") if state == "normal" else Color("f0bf6d")
-			style.border_color = Color("a6722c")
-		else:
-			style.bg_color = Color("3b2618") if state == "normal" else Color("543723")
-			style.border_color = Color("6e4b30")
-		style.border_width_top = 2
-		style.border_width_bottom = 4
-		style.border_width_left = 2
-		style.border_width_right = 2
-		style.set_corner_radius_all(8)
-		style.shadow_color = Color(0, 0, 0, 0.45)
-		style.shadow_size = 6
-		b.add_theme_stylebox_override(state, style)
+	b.text=text
+	b.custom_minimum_size=min_size
+	CafeUi.button(b,primary)
+	b.add_theme_font_size_override("font_size",font_sz)
 	b.pressed.connect(action)
 	return b
 
+func _pill_toggle(text: String,active: bool,action: Callable,min_size := Vector2(108,40)) -> Button:
+	return _wood_button(text,action,active,min_size,16)
 
-func _green_button(text: String, action: Callable, min_size := Vector2(270, 62)) -> Button:
-	var b := Button.new()
-	b.text = text
-	b.custom_minimum_size = min_size
-	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	b.add_theme_font_override("font", _font)
-	b.add_theme_font_size_override("font_size", 23)
-	b.add_theme_color_override("font_color", Color("f4fff2"))
-	b.add_theme_color_override("font_hover_color", Color.WHITE)
-	for state in ["normal", "hover", "pressed", "focus"]:
-		var style := StyleBoxFlat.new()
-		style.bg_color = Color("3a9442") if state == "normal" else Color("48b051")
-		style.border_color = Color("26692c")
-		style.border_width_top = 2
-		style.border_width_bottom = 4
-		style.set_corner_radius_all(28)
-		style.shadow_color = Color(0, 0, 0, 0.45)
-		style.shadow_size = 8
-		b.add_theme_stylebox_override(state, style)
-	b.pressed.connect(action)
-	return b
-
-
-func _pill_toggle(text: String, active: bool, action: Callable, min_size := Vector2(108, 40)) -> Button:
-	var b := Button.new()
-	b.text = text
-	b.custom_minimum_size = min_size
-	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	b.add_theme_font_override("font", _font)
-	b.add_theme_font_size_override("font_size", 15)
-	b.add_theme_color_override("font_color", Color("241409") if active else MUTED)
-	for state in ["normal", "hover", "pressed", "focus"]:
-		var style := StyleBoxFlat.new()
-		style.bg_color = (Color("dead5a") if active else Color("1c130d")) if state == "normal" else (Color("ecc06e") if active else Color("2e2016"))
-		style.border_color = Color("f2c97d") if active else Color("4a3525")
-		style.set_border_width_all(1)
-		style.set_corner_radius_all(18)
-		b.add_theme_stylebox_override(state, style)
-	b.pressed.connect(action)
-	return b
-
+func _page(title: String, width: float = 540) -> VBoxContainer:
+	var panel := PanelContainer.new()
+	panel.set_anchors_preset(Control.PRESET_CENTER_RIGHT)
+	panel.offset_left=-width-80;panel.offset_right=-80
+	panel.offset_top=-355;panel.offset_bottom=355
+	root_ui.add_child(panel)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation",18)
+	panel.add_child(col)
+	var header := HBoxContainer.new();header.add_theme_constant_override("separation",18)
+	header.add_child(_wood_button("Geri",_home,false,Vector2(72,40),15))
+	var heading := _label(title,27);heading.size_flags_vertical=Control.SIZE_SHRINK_CENTER
+	header.add_child(heading);col.add_child(header)
+	col.add_child(HSeparator.new())
+	return col
 
 func _home() -> void:
 	_clear("home")
-
-	# Illustrated OKEY KIRAATHANE Emblem (Steaming Tea Glass, 8 & ? Tiles, Mustache)
-	var logo_rect := TextureRect.new()
-	logo_rect.texture = LOGO_TEX
-	logo_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	logo_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	logo_rect.position = Vector2(72, 92)
-	logo_rect.size = Vector2(390, 340)
-	logo_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root_ui.add_child(logo_rect)
-
-	var btn_col := VBoxContainer.new()
-	btn_col.position = Vector2(485, 162)
-	btn_col.add_theme_constant_override("separation", 14)
-	root_ui.add_child(btn_col)
-	btn_col.add_child(_wood_button("OYNA", _table, true, Vector2(245, 58), 24))
-	btn_col.add_child(_wood_button("KARAKTERLER", _characters, false, Vector2(245, 52), 19))
-	btn_col.add_child(_wood_button("MEKANLAR", _table, false, Vector2(245, 52), 19))
-	btn_col.add_child(_wood_button("AYARLAR", _settings, false, Vector2(245, 52), 19))
-	btn_col.add_child(_wood_button("ÇIKIŞ", func() -> void: get_tree().quit(), false, Vector2(245, 52), 19))
+	var panel := PanelContainer.new()
+	panel.set_anchors_preset(Control.PRESET_CENTER_LEFT)
+	panel.offset_left=80;panel.offset_right=470;panel.offset_top=-280;panel.offset_bottom=280
+	root_ui.add_child(panel)
+	var col := VBoxContainer.new();col.add_theme_constant_override("separation",14);panel.add_child(col)
+	col.add_child(_label("OKEY",49,CREAM,true))
+	col.add_child(_label("Kıraathane",23,MUTED))
+	var gap := Control.new();gap.custom_minimum_size.y=24;col.add_child(gap)
+	col.add_child(_wood_button("Oyna",_play,true))
+	col.add_child(_wood_button("Karakterler",_characters))
+	col.add_child(_wood_button("Ayarlar",_settings))
+	col.add_child(_wood_button("Çıkış",func() -> void: get_tree().quit()))
 
 
 func _characters() -> void:
 	_clear("characters")
 
-	var back_btn := _wood_button("←   KARAKTER SEÇ", _home, false, Vector2(240, 46), 19)
-	back_btn.position = Vector2(48, 36)
-	root_ui.add_child(back_btn)
-
 	_preview_stage = Node3D.new()
+	_preview_stage.process_mode = Node.PROCESS_MODE_ALWAYS
 	game.add_child(_preview_stage)
 
 	var floor_mesh := MeshInstance3D.new()
@@ -302,10 +242,10 @@ func _characters() -> void:
 	var cur_info: Dictionary = PATRON_DATA.get(_selected_card, PATRON_DATA["sabri"])
 	var model_kind: String = cur_info["model"]
 
-	var patron := CafePatron.new()
+	var patron: Variant = RiggedPatron.new() if model_kind in RiggedPatron.KINDS else CafePatron.new()
 	_preview_stage.add_child(patron)
 	patron.build(model_kind)
-	patron.position = Vector3(-0.92, 0.54, 0.0)
+	patron.position = Vector3(-0.92, Seat.SEAT_TOP, 0.0)
 	patron.rotation.y = PI + 0.28
 
 	var chair: Node3D = load("res://assets/models/table_details/kiraathane_chair.glb").instantiate()
@@ -318,7 +258,7 @@ func _characters() -> void:
 	_preview_stage.add_child(key_light)
 	key_light.look_at(Vector3(-0.92, 0.85, 0.0), Vector3.UP)
 	key_light.light_color = Color("ffd9a6")
-	key_light.light_energy = 1.65
+	key_light.light_energy = 1.15
 	key_light.spot_range = 6.0
 	key_light.spot_angle = 55.0
 	key_light.shadow_enabled = true
@@ -326,317 +266,77 @@ func _characters() -> void:
 	var fill_light := OmniLight3D.new()
 	fill_light.position = Vector3(-0.92, 0.65, 1.55)
 	fill_light.light_color = Color("ffc88a")
-	fill_light.light_energy = 1.10
+	fill_light.light_energy = .50
 	fill_light.omni_range = 4.5
 	_preview_stage.add_child(fill_light)
 
 	var rim_light := OmniLight3D.new()
 	rim_light.position = Vector3(-1.25, 1.75, -0.75)
 	rim_light.light_color = Color("ff9e52")
-	rim_light.light_energy = 0.80
+	rim_light.light_energy = .35
 	rim_light.omni_range = 3.5
 	_preview_stage.add_child(rim_light)
 
-	# 4 Rich Illustrated Portrait Selector Cards in a vertical column
-	var cards_col := VBoxContainer.new()
-	cards_col.position = Vector2(720, 125)
-	cards_col.add_theme_constant_override("separation", 12)
-	root_ui.add_child(cards_col)
-
+	var col := _page("Karakterler",550)
+	col.add_child(_label(cur_info["title"].capitalize(),25))
+	var quote := _label(str(cur_info["quote"]).replace("\n"," "),16,MUTED)
+	quote.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	quote.custom_minimum_size.y=45
+	col.add_child(quote)
+	var scroll := ScrollContainer.new();scroll.size_flags_vertical=Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED;col.add_child(scroll)
+	var grid := GridContainer.new();grid.columns=2;grid.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	grid.add_theme_constant_override("h_separation",10);grid.add_theme_constant_override("v_separation",10);scroll.add_child(grid)
 	for card_id in PATRON_ORDER:
-		var active: bool = (_selected_card == card_id)
-		var card := Button.new()
-		card.custom_minimum_size = Vector2(104, 104)
-		card.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-		var st := StyleBoxFlat.new()
-		st.bg_color = Color("26180f") if not active else Color("382315")
-		st.border_color = GOLD if active else Color("5c4028")
-		st.set_border_width_all(3 if active else 2)
-		st.set_corner_radius_all(12)
-		card.add_theme_stylebox_override("normal", st)
-		card.add_theme_stylebox_override("hover", st)
-		card.add_theme_stylebox_override("pressed", st)
-		var pdata: Dictionary = PATRON_DATA[card_id]
-		var ptex: Texture2D = pdata["portrait"]
-		card.draw.connect(func() -> void:
-			card.draw_texture_rect(ptex, Rect2(5, 5, 94, 94), false)
-			card.draw_rect(Rect2(5, 5, 94, 94), GOLD if active else Color("6e4b30"), false, 2.5 if active else 1.5)
-		)
-		card.pressed.connect(func() -> void:
-			_selected_card = card_id
-			CafePreferences.cast = "Dayılar"
-			CafePreferences.companion = pdata["model"]
-			_apply_companion()
-			CafePreferences.save()
-			_characters()
-		)
-		cards_col.add_child(card)
-
-	var info_panel := PanelContainer.new()
-	info_panel.position = Vector2(846, 125)
-	info_panel.custom_minimum_size = Vector2(450, 444)
-	var pstyle := StyleBoxFlat.new()
-	pstyle.bg_color = Color(0.11, 0.07, 0.04, 0.90)
-	pstyle.border_color = Color("6e4b30")
-	pstyle.set_border_width_all(2)
-	pstyle.set_corner_radius_all(14)
-	pstyle.content_margin_left = 30
-	pstyle.content_margin_right = 30
-	pstyle.content_margin_top = 24
-	pstyle.content_margin_bottom = 24
-	info_panel.add_theme_stylebox_override("panel", pstyle)
-	root_ui.add_child(info_panel)
-
-	var info_col := VBoxContainer.new()
-	info_col.add_theme_constant_override("separation", 14)
-	info_panel.add_child(info_col)
-
-	info_col.add_child(_label(cur_info["title"], 34, CREAM, true))
-	info_col.add_child(_label(cur_info["quote"], 15, MUTED))
-
-	var sep := HSeparator.new()
-	sep.modulate = Color("6e4b30")
-	info_col.add_child(sep)
-
-	for stat_pair in cur_info["stats"]:
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 12)
-		var slbl := _label(stat_pair[0], 14, CREAM)
-		slbl.custom_minimum_size.x = 110
-		row.add_child(slbl)
-		var bar := ProgressBar.new()
-		bar.custom_minimum_size = Vector2(210, 14)
-		bar.max_value = 1.0
-		bar.value = stat_pair[1]
-		bar.show_percentage = false
-		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		var bfill := StyleBoxFlat.new()
-		bfill.bg_color = GOLD
-		bfill.set_corner_radius_all(6)
-		bar.add_theme_stylebox_override("fill", bfill)
-		var bbg := StyleBoxFlat.new()
-		bbg.bg_color = Color("2b1c12")
-		bbg.set_corner_radius_all(6)
-		bar.add_theme_stylebox_override("background", bbg)
-		row.add_child(bar)
-		info_col.add_child(row)
-
-	var spacer := Control.new()
-	spacer.custom_minimum_size.y = 10
-	info_col.add_child(spacer)
-
-	info_col.add_child(_wood_button("SEÇ", _table, true, Vector2(240, 54), 22))
-
+		var data: Dictionary=PATRON_DATA[card_id]
+		var card := _wood_button(str(data.title).capitalize(),func() -> void:
+			_selected_card=card_id
+			CafePreferences.cast="Dayılar";CafePreferences.companion=card_id
+			_apply_companion();CafePreferences.save();_characters()
+		,card_id==_selected_card,Vector2(225,78),15)
+		card.icon=data.portrait;card.expand_icon=true
+		card.add_theme_constant_override("icon_max_width",48)
+		card.add_theme_constant_override("h_separation",12)
+		card.alignment=HORIZONTAL_ALIGNMENT_LEFT
+		grid.add_child(card)
+	col.add_child(_wood_button("Tamam",_home,true,Vector2(0,48)))
 
 func _table() -> void:
-	_clear("table")
-
-	var back_btn := _wood_button("←   LOBBİ", _home, false, Vector2(180, 44), 19)
-	back_btn.position = Vector2(48, 32)
-	root_ui.add_child(back_btn)
-
-	var invite_btn := _pill_toggle("👥  Arkadaşını Davet Et   +", false, func() -> void: pass, Vector2(236, 42))
-	invite_btn.position = Vector2(1304, 32)
-	root_ui.add_child(invite_btn)
-
-	var lobby_panel := PanelContainer.new()
-	lobby_panel.position = Vector2(280, 102)
-	lobby_panel.custom_minimum_size = Vector2(1040, 596)
-	var lstyle := StyleBoxFlat.new()
-	lstyle.bg_color = Color(0.08, 0.05, 0.03, 0.94)
-	lstyle.border_color = Color("6e4b30")
-	lstyle.set_border_width_all(2)
-	lstyle.set_corner_radius_all(18)
-	lstyle.content_margin_left = 36
-	lstyle.content_margin_right = 36
-	lstyle.content_margin_top = 22
-	lstyle.content_margin_bottom = 22
-	lobby_panel.add_theme_stylebox_override("panel", lstyle)
-	root_ui.add_child(lobby_panel)
-
-	var lcol := VBoxContainer.new()
-	lcol.add_theme_constant_override("separation", 12)
-	lobby_panel.add_child(lcol)
-
-	var v_names := ["KIRAATHANE", "SAHİL", "DAĞ EVİ", "YAZLIK"]
-	var cur_idx := maxi(0, v_names.find(CafePreferences.venue))
-	var cur_vdata: Dictionary = VENUES[cur_idx]
-
-	# 1. Top Large Illustrated Panoramic Venue Banner (just like reference image!)
-	var banner := Control.new()
-	banner.custom_minimum_size = Vector2(640, 156)
-	banner.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	var b_tex: Texture2D = cur_vdata["banner_tex"]
-	banner.draw.connect(func() -> void:
-		banner.draw_rect(Rect2(0, 0, 640, 156), Color("1a0f08"), true)
-		banner.draw_texture_rect(b_tex, Rect2(4, 4, 632, 148), false)
-		# Subtle bottom gradient strip for venue mood subtitle
-		banner.draw_rect(Rect2(4, 118, 632, 34), Color(0.06, 0.03, 0.01, 0.72), true)
-		banner.draw_string(_font, Vector2(20, 141), cur_vdata["id"] + "  ·  " + cur_vdata["sub"], HORIZONTAL_ALIGNMENT_CENTER, 600, 14, Color("f5dfa8"))
-		banner.draw_rect(Rect2(2, 2, 636, 152), GOLD, false, 2.5)
-	)
-	lcol.add_child(banner)
-
-	# 2. Venue Carousel Title & Arrows (< KIRAATHANE >)
-	var nav_row := HBoxContainer.new()
-	nav_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	nav_row.add_theme_constant_override("separation", 28)
-	lcol.add_child(nav_row)
-
-	nav_row.add_child(_pill_toggle("‹", false, func() -> void:
-		CafePreferences.venue = v_names[(cur_idx - 1 + v_names.size()) % v_names.size()]
-		CafePreferences.save()
-		_table()
-	, Vector2(44, 38)))
-
-	var v_title := _label(CafePreferences.venue, 28, CREAM, true)
-	v_title.custom_minimum_size.x = 240
-	v_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	nav_row.add_child(v_title)
-
-	nav_row.add_child(_pill_toggle("›", false, func() -> void:
-		CafePreferences.venue = v_names[(cur_idx + 1) % v_names.size()]
-		CafePreferences.save()
-		_table()
-	, Vector2(44, 38)))
-
-	# 3. 4 Rich Illustrated Venue Cards Row (KIRAATHANE · SAHİL · DAĞ EVİ · YAZLIK)
-	var venue_row := HBoxContainer.new()
-	venue_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	venue_row.add_theme_constant_override("separation", 16)
-	lcol.add_child(venue_row)
-
-	for vdata in VENUES:
-		var vid: String = vdata["id"]
-		var active: bool = (CafePreferences.venue == vid)
-		var c_tex: Texture2D = vdata["card_tex"]
-		var vcard := Button.new()
-		vcard.custom_minimum_size = Vector2(220, 148)
-		vcard.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-		var vst := StyleBoxFlat.new()
-		vst.bg_color = Color("24150c") if active else Color("170e08")
-		vst.border_color = GOLD if active else Color("543a24")
-		vst.set_border_width_all(3 if active else 1)
-		vst.set_corner_radius_all(12)
-		vcard.add_theme_stylebox_override("normal", vst)
-		vcard.add_theme_stylebox_override("hover", vst)
-		vcard.add_theme_stylebox_override("pressed", vst)
-		vcard.draw.connect(func() -> void:
-			# Rich illustrated artwork filling upper portion of the card
-			vcard.draw_texture_rect(c_tex, Rect2(5, 5, 210, 94), false)
-			vcard.draw_rect(Rect2(5, 5, 210, 94), GOLD if active else Color("4a3320"), false, 1.5)
-			# Crisp title & subtitle below the artwork
-			vcard.draw_string(_font, Vector2(10, 121), vid, HORIZONTAL_ALIGNMENT_CENTER, 200, 17, CREAM if active else Color("d8c09e"))
-			vcard.draw_string(_font, Vector2(8, 139), vdata["sub"], HORIZONTAL_ALIGNMENT_CENTER, 204, 11, GOLD if active else MUTED)
-		)
-		vcard.pressed.connect(func() -> void:
-			CafePreferences.venue = vid
-			CafePreferences.save()
-			_table()
-		)
-		venue_row.add_child(vcard)
-
-	# 4. Match Options Row (MASA TÜRÜ · TAŞ HIZI · MASA ÇUHASI)
-	var opts_row := HBoxContainer.new()
-	opts_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	opts_row.add_theme_constant_override("separation", 42)
-	lcol.add_child(opts_row)
-
-	var mode_col := VBoxContainer.new()
-	mode_col.add_theme_constant_override("separation", 8)
-	mode_col.add_child(_label("MASA TÜRÜ", 13, MUTED))
-	var mode_pills := HBoxContainer.new()
-	mode_pills.add_theme_constant_override("separation", 10)
-	for m_opt in ["4 KİŞİ", "2 KİŞİ"]:
-		mode_pills.add_child(_pill_toggle(m_opt, CafePreferences.table_mode == m_opt, func() -> void:
-			CafePreferences.table_mode = m_opt
-			CafePreferences.save()
-			_table()
-		))
-	mode_col.add_child(mode_pills)
-	opts_row.add_child(mode_col)
-
-	var spd_col := VBoxContainer.new()
-	spd_col.add_theme_constant_override("separation", 8)
-	spd_col.add_child(_label("TAŞ HIZI", 13, MUTED))
-	var spd_pills := HBoxContainer.new()
-	spd_pills.add_theme_constant_override("separation", 10)
-	for s_opt in ["NORMAL", "HIZLI"]:
-		spd_pills.add_child(_pill_toggle(s_opt, CafePreferences.tile_speed == s_opt, func() -> void:
-			CafePreferences.tile_speed = s_opt
-			CafePreferences.save()
-			_table()
-		))
-	spd_col.add_child(spd_pills)
-	opts_row.add_child(spd_col)
-
-	var cloth_col := VBoxContainer.new()
-	cloth_col.add_theme_constant_override("separation", 8)
-	cloth_col.add_child(_label("MASA ÇUHASI", 13, MUTED))
-	var cloth_pills := HBoxContainer.new()
-	cloth_pills.add_theme_constant_override("separation", 10)
-	for c_opt in ["Bordo", "Yeşil"]:
-		cloth_pills.add_child(_pill_toggle(c_opt.to_upper(), CafePreferences.cloth == c_opt, func() -> void:
-			CafePreferences.cloth = c_opt
-			_apply_table()
-			CafePreferences.save()
-			_table()
-		))
-	cloth_col.add_child(cloth_pills)
-	opts_row.add_child(cloth_col)
-
-	var launch_row := HBoxContainer.new()
-	launch_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	lcol.add_child(launch_row)
-	launch_row.add_child(_green_button("MASA KUR", _play, Vector2(290, 62)))
-
+	_play()
 
 func _settings() -> void:
 	_clear("settings")
-	var back_btn := _wood_button("←   AYARLAR", _home, false, Vector2(210, 44), 19)
-	back_btn.position = Vector2(48, 36)
-	root_ui.add_child(back_btn)
-
-	var spanel := PanelContainer.new()
-	spanel.position = Vector2(360, 130)
-	spanel.custom_minimum_size = Vector2(520, 360)
-	var pstyle := StyleBoxFlat.new()
-	pstyle.bg_color = Color(0.10, 0.07, 0.04, 0.90)
-	pstyle.border_color = Color("6e4b30")
-	pstyle.set_border_width_all(2)
-	pstyle.set_corner_radius_all(14)
-	pstyle.content_margin_left = 32
-	pstyle.content_margin_right = 32
-	pstyle.content_margin_top = 28
-	pstyle.content_margin_bottom = 28
-	spanel.add_theme_stylebox_override("panel", pstyle)
-	root_ui.add_child(spanel)
-
-	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 16)
-	spanel.add_child(col)
-
-	col.add_child(_label("SES SEVİYESİ", 15, CREAM))
-	col.add_child(_slider(CafePreferences.volume, 0, 1, func(val: float) -> void:
-		CafePreferences.volume = val
-		CafePreferences.apply()
+	var col := _page("Ayarlar",550)
+	col.add_child(_label("Ses",16,MUTED))
+	var volume := _label(str(roundi(CafePreferences.volume*100))+" %",16)
+	col.add_child(volume)
+	col.add_child(_slider(CafePreferences.volume,0,1,func(value: float) -> void:
+		CafePreferences.volume=value;CafePreferences.apply();CafePreferences.save()
+		volume.text=str(roundi(value*100))+" %"
 	))
-
-	col.add_child(_label("FARE HASSASİYETİ", 15, CREAM))
-	col.add_child(_slider(CafePreferences.sensitivity, 0.4, 2.0, func(val: float) -> void:
-		CafePreferences.sensitivity = val
+	col.add_child(_label("Fare hassasiyeti",16,MUTED))
+	var sensitivity := _label("%.1f"%CafePreferences.sensitivity,16);col.add_child(sensitivity)
+	col.add_child(_slider(CafePreferences.sensitivity,.4,2,func(value: float) -> void:
+		CafePreferences.sensitivity=value;CafePreferences.save();sensitivity.text="%.1f"%value
 	))
-
-	col.add_child(_wood_button("TAM EKRAN: " + ("AÇIK" if CafePreferences.fullscreen else "KAPALI"), func() -> void:
-		CafePreferences.fullscreen = not CafePreferences.fullscreen
-		CafePreferences.apply()
-		_settings()
-	, false, Vector2(320, 48), 18))
-
-	col.add_child(_wood_button("KAYDET VE DÖN", func() -> void:
-		CafePreferences.save()
-		_home()
-	, true, Vector2(320, 52), 20))
+	var fullscreen := CheckButton.new();fullscreen.text="Tam ekran";fullscreen.button_pressed=CafePreferences.fullscreen
+	fullscreen.toggled.connect(func(value: bool) -> void:
+		CafePreferences.fullscreen=value;CafePreferences.apply();CafePreferences.save()
+	)
+	col.add_child(fullscreen)
+	col.add_child(HSeparator.new())
+	col.add_child(_label("Masa örtüsü",16,MUTED))
+	var cloth := HBoxContainer.new();cloth.add_theme_constant_override("separation",10);col.add_child(cloth)
+	for option in ["Bordo","Yeşil"]:
+		cloth.add_child(_pill_toggle(option,CafePreferences.cloth==option,func() -> void:
+			CafePreferences.cloth=option;_apply_table();CafePreferences.save();_settings()
+		))
+	col.add_child(_label("Oyun temposu",16,MUTED))
+	var speed := HBoxContainer.new();speed.add_theme_constant_override("separation",10);col.add_child(speed)
+	for option in ["NORMAL","HIZLI"]:
+		speed.add_child(_pill_toggle(option.capitalize(),CafePreferences.tile_speed==option,func() -> void:
+			CafePreferences.tile_speed=option;CafePreferences.save();_settings()
+		))
 
 
 func _slider(value: float, minimum: float, maximum: float, changed: Callable) -> HSlider:
@@ -651,18 +351,14 @@ func _slider(value: float, minimum: float, maximum: float, changed: Callable) ->
 
 
 func _apply_companion() -> void:
-	var chosen: String = CafePreferences.companion if CafePreferences.companion in CafePatron.KINDS else "sabri"
+	var chosen: String = CafePreferences.companion if CafePreferences.companion in CafePatron.KINDS or CafePreferences.companion in RiggedPatron.KINDS else "sabri"
 	game.seats[0].set_character(chosen)
 
-	# The 3 opponents take the remaining 3 coffeehouse patrons
-	var all_kinds := ["sabri", "temel", "rifki", "davut"]
-	var opp_kinds: Array = []
-	for k in all_kinds:
-		if k != chosen:
-			opp_kinds.append(k)
-
+	# Keep this table's shuffled guests stable while browsing clothes and character cards.
 	for i in 3:
-		game.seats[i + 1].set_character(opp_kinds[i])
+		if game.seats[i + 1].character != _opponent_order[i]:
+			game.seats[i + 1].set_character(_opponent_order[i])
+	_set_local_hands_visible(_screen=="play")
 
 
 func _set_companion(seat: Seat, kind: String) -> void:
@@ -678,14 +374,14 @@ func _set_companion(seat: Seat, kind: String) -> void:
 
 func _apply_table() -> void:
 	_apply_companion()
-	for mi: MeshInstance3D in game.table.find_children("*", "MeshInstance3D", true, false):
-		if mi.material_override is ShaderMaterial and mi.material_override.shader == preload("res://assets/shaders/okey_felt.gdshader"):
-			var felt: Color = Color("3c1816") if CafePreferences.cloth == "Bordo" else Color("173928")
-			mi.material_override.set_shader_parameter("felt_color", felt)
+	game.table.set_felt_style(CafePreferences.cloth)
 
 
 func _play(capture_mouse := true) -> void:
 	_clear("play")
+	game.randomize_player_place()
+	game._turn_max=9.0 if CafePreferences.tile_speed=="HIZLI" else 16.0
+	game._turn_timer=game._turn_max
 	_set_local_hands_visible(true)
 	layer.hide()
 	game.process_mode = Node.PROCESS_MODE_INHERIT
@@ -698,6 +394,11 @@ func _play(capture_mouse := true) -> void:
 	game.camera.attributes.dof_blur_far_enabled = true
 	game.camera.set_focused(false, true)
 	set_process(false)
+
+func _unhandled_input(event: InputEvent) -> void:
+	if _screen!="home" and _screen!="play" and event is InputEventKey and event.pressed and event.keycode==KEY_ESCAPE:
+		_home()
+		get_viewport().set_input_as_handled()
 
 
 func _process(delta: float) -> void:

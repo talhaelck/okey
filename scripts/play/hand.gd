@@ -567,7 +567,7 @@ func _find_drop(from: Vector3, dir: Vector3) -> Dictionary:
 		if is_instance_valid(table.indicator_tile) and _origin == seat.rack and felt.distance_to(table.indicator_tile.global_position) < 0.085:
 			return {"finish": true, "point": felt}
 		# Only snap to the right discard tray when aiming near DISCARD_SPOTS[0]; anywhere else places freely on the table!
-		if _origin == seat.rack and Vector2(local_felt.x - Table.DISCARD_SPOTS[0].x, local_felt.z - Table.DISCARD_SPOTS[0].z).length() < 0.14:
+		if _origin == seat.rack and Table.is_in_discard_zone(local_felt):
 			return {"discard": true, "point": felt}
 		best = {"point": felt}
 	return best

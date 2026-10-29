@@ -1,0 +1,10 @@
+# Kahvehane yüzey revizyonu
+
+- Bakır, döküm demir, honlu mermer ve kireç sıva için yerel olarak üretilmiş albedo/roughness/OpenGL normal haritaları. Üretim: `tools/materials/generate_coffeehouse_maps.py`. Dış servis veya ücretli üretim kullanılmaz.
+- Ahşaplar projedeki `wood_table_worn` taramasını ve yeni saten roughness haritasını kullanır. Ölçekler metre üzerinden dünya koordinatlarında üç eksenli örneklenir; oda GLB'sinin UV'siz olması uzama yaratmaz.
+- Oyun malzemeleri: `scripts/world/coffeehouse_materials.gd`. İçe aktarılan kaynakları değiştirmeden ortak malzeme geçersiz kılmaları uygular. Karakterlere uygulanmaz.
+- Oda: `assets/models/environment/muhabbet_surfacepass.glb`; ayrı Blender kaynağı: `tools/blender/source/muhabbet_surfacepass.blend`, sahne `Coffeehouse_SurfacePass`. Önceki oda ve karakter kaynakları korunmuştur.
+- Blender değişiklikleri: düz yüzey normalleri, eğimli sac davlumbaz, düzgün yuvarlak metal halkalar, semaver musluğu/kulpları, soba kapak menteşeleri/tutamağı/kül çekmecesi, maşa-kürek, çay kaşıkları ve demlik fittings.
+- Yeniden oluşturma sırası: özgün oda GLB'sini ayrı `Coffeehouse_SurfacePass` sahnesine aktar, `tools/blender/coffeehouse_surfacepass.py` içindeki `improve(base)` ardından `tools/blender/finish_coffeehouse_surfaces.py` içindeki `finish(base)`. Son kayıtlı `.blend` bu iki aşamanın sonucudur. Haritalar ve dünya koordinatlı kaplamalar Godot'ta uygulanır; Blender önizlemesi oyun ışığını temsil etmez.
+- Slogan levhası yerine Boğaz görseli kullanılır. Küçük dolgu ve metal yansıması ayarları oda betiğindedir. ReflectionProbe yalnızca katman 2'deki ortam/mobilyaya etki eder; karakter görünüşünü parlatmaz. Elektrik kesintisi ışıkları, emisyonları ve yansıma şiddetini birlikte azaltır.
+- Doğrulama: Godot 4.7.2 içe aktarımı ve oyun içi masa/çay ocağı/soba görüntüleri; kesinti/geri dönüş ışık-emisyon-yansıma kontrolleri başarılı. Performans ölçümü yapılmadı. Yerel çıktı: `screenshots/surfacepass_game.png`, `surfacepass_counter.png`, `surfacepass_stove.png`, `surfacepass_room.png`.

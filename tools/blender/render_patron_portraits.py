@@ -20,15 +20,15 @@ def render_portraits(ui_dir: str):
     scene.render.resolution_y = 256
     scene.render.resolution_percentage = 100
 
-    # Camera at comfortable distance, slight 3/4 angle showing face, neck & chest
+    # Camera at comfortable distance, slight 3/4 angle showing face, hair, neck & chest
     cam = bpy.data.objects.get("PortraitCam")
     if not cam:
-        bpy.ops.object.camera_add(location=(0.14, 1.05, 0.68))
+        bpy.ops.object.camera_add(location=(0.08, 1.18, 0.72))
         cam = bpy.context.view_layer.objects.active
         cam.name = "PortraitCam"
-    cam.location = (0.14, 1.05, 0.68)
-    cam.rotation_euler = (math.radians(94), math.radians(1.5), math.radians(172))
-    cam.data.lens = 65
+    cam.location = (0.08, 1.18, 0.72)
+    cam.rotation_euler = (math.radians(88.5), math.radians(0.0), math.radians(176.0))
+    cam.data.lens = 70
     scene.camera = cam
 
     # Lighting

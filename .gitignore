@@ -4,3 +4,8 @@
 
 # Debug screenshots
 /screenshots/
+
+# Local authoring caches and automatic Blender backups
+__pycache__/
+*.py[cod]
+*.blend[1-9]
