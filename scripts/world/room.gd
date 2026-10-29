@@ -34,6 +34,7 @@ func _build_shell() -> void:
 	var panel := Mat.textured("dark_paneled_wood", 1.2)
 	var ceiling := Mat.textured("plastered_wall", 2.0, Color(0.55, 0.5, 0.45))
 	Mat.part(self, BoxMesh.new(), floor_mat, Vector3(0, -0.05, 0)).scale = Vector3(WIDTH, 0.1, DEPTH)
+	Colliders.box(Colliders.static_body(self), Vector3(WIDTH, 0.1, DEPTH), Transform3D(Basis(), Vector3(0, -0.05, 0)))
 	Mat.part(self, BoxMesh.new(), ceiling, Vector3(0, HEIGHT + 0.05, 0)).scale = Vector3(WIDTH, 0.1, DEPTH)
 	# Four walls: [centre, length, facing yaw].
 	for wall in [[Vector3(0, 0, -DEPTH / 2), WIDTH, 0.0], [Vector3(0, 0, DEPTH / 2), WIDTH, PI],
@@ -85,12 +86,13 @@ func _background_table(at: Vector3, yaw: float) -> void:
 		var seat_pos := dir * 0.85
 		Mat.model(table, "plastic_monobloc_chair_01", seat_pos, angle + PI)
 		if i < 2:
-			Mat.prop(table, "tea_set", dir * 0.35 + Vector3(0, TEA_TABLE_TOP, 0), randf() * TAU)
+			Mat.meshy(table, "cay_bardagi", dir * 0.35 + Vector3(0, TEA_TABLE_TOP, 0), randf() * TAU)
 			var regular := Buddy.new()
 			regular.position = seat_pos + Vector3(0, Seat.SEAT_TOP - 0.03, 0) - dir * 0.04
 			regular.rotation.y = angle
 			table.add_child(regular)
 			regular.setup(Appearance.random())
+	Mat.meshy(table, "kulluk", Vector3(0, TEA_TABLE_TOP, 0), randf() * TAU)
 	_hanging_lamp(Vector3(at.x, HEIGHT, at.z), 3.0)
 
 

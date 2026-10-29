@@ -4,3 +4,12 @@
 
 # Debug screenshots
 /screenshots/
+
+# Personal API keys (each developer has their own, see tools/meshy.py)
+.env
+
+# Raw downloads (Meshy etc.), turned into assets/ by tools/blender/meshy_import.py
+/raw/
+
+# Python bytecode
+__pycache__/

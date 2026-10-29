@@ -1,7 +1,8 @@
 extends Node3D
 ## Prototype entry point: deals a shuffled okey set, wires the local camera, hand, opponents and HUD.
-## Debug: `godot --path . -- --screenshot=<file.png> [--focus] [--yaw=<rad>] [--pitch=<rad>] [--hold] [--caught]`
-## renders one frame and quits (--hold puts a tile from your rack in the glove first).
+## Debug: `godot --path . -- --screenshot=<file.png> [--focus] [--yaw=<rad>] [--pitch=<rad>] [--hold] [--spill] [--caught] [--frames=<n>]`
+## renders one frame and quits (--hold puts a tile from your rack in the hand; --frames sets how many frames
+## run before the capture).
 
 const COLOR_COUNT := 4
 
@@ -89,16 +90,23 @@ func _capture(args: Dictionary) -> void:
 	camera.look(float(args.get("yaw", "0")), float(args.get("pitch", "-0.5")))
 	hand.aim_override = get_viewport().get_visible_rect().size * Vector2(0.55, 0.42)
 	if args.has("hold"):
-		hand.grab(get_tree().get_nodes_in_group("tiles").filter(func(t: Tile) -> bool: return t.holder == seats[0].rack)[0])
+		hand.grab(_first_rack_tile())
+	if args.has("spill"):
+		var glass := seats[0].tea
+		glass.apply_impulse(Vector3(-0.3, 0, -0.1), glass.global_basis * Vector3(0, TeaGlass.GLASS_HEIGHT, 0))
 	if args.has("caught"):
 		_on_caught(watchers[0])
 	DirAccess.make_dir_recursive_absolute(path.get_base_dir())
-	for i in 30:
+	for i in int(args.get("frames", "30")):
 		await get_tree().process_frame
 	await RenderingServer.frame_post_draw
 	get_viewport().get_texture().get_image().save_png(path)
 	print("Screenshot saved: ", path)
 	get_tree().quit()
+
+
+func _first_rack_tile() -> Tile:
+	return get_tree().get_nodes_in_group("tiles").filter(func(t: Tile) -> bool: return t.holder == seats[0].rack)[3]
 
 
 func _user_args() -> Dictionary:

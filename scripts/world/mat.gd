@@ -72,6 +72,15 @@ static func prop(parent: Node3D, id: String, pos := Vector3.ZERO, yaw := 0.0) ->
 	return node
 
 
+## Instances a Meshy-generated model from assets/models/meshy/<id>.glb (tools/blender/meshy_import.py).
+static func meshy(parent: Node3D, id: String, pos := Vector3.ZERO, yaw := 0.0) -> Node3D:
+	var node: Node3D = load("res://assets/models/meshy/%s.glb" % id).instantiate()
+	node.position = pos
+	node.rotation.y = yaw
+	parent.add_child(node)
+	return node
+
+
 static func sphere(radius: float) -> SphereMesh:
 	var m := SphereMesh.new()
 	m.radius = radius

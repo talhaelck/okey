@@ -8,6 +8,8 @@ const VESTS: Array[Color] = [Color(0.36, 0.22, 0.15), Color(0.2, 0.32, 0.22), Co
 	Color(0.38, 0.38, 0.4)]
 const TROUSERS: Array[Color] = [Color(0.27, 0.28, 0.33), Color(0.33, 0.27, 0.2), Color(0.18, 0.18, 0.2)]
 const CAPS: Array[Color] = [Color(0.4, 0.34, 0.28), Color(0.3, 0.3, 0.32), Color(0.16, 0.15, 0.15), Color(0.62, 0.55, 0.42)]
+## Shirt worn under the vest; its rolled-up sleeves are on every dayı and on the first-person arms.
+const SHIRT := Color(0.9, 0.88, 0.83)
 const HAIRS: Array[Color] = [Color(0.14, 0.11, 0.1), Color(0.45, 0.43, 0.42), Color(0.85, 0.85, 0.83)]
 
 @export var skin := SKINS[1]
@@ -49,9 +51,9 @@ func _material_for(part: String) -> Material:
 	var kind := part.get_slice("_", 0)
 	if kind in ["head", "arms"] or (kind == "hand" and not part.contains("ring") and not part.contains("watch")):
 		return _skin_material(skin)
-	if kind in ["vest", "trousers", "atlet", "hat"] and not part.contains("button"):
+	if kind in ["vest", "trousers", "atlet", "sleeves", "hat"] and not part.contains("button"):
 		# Woven cloth detail that sticks to the body (object-space projection).
-		var colour := {"vest": vest, "trousers": trousers, "atlet": Color(0.95, 0.94, 0.9), "hat": cap}[kind] as Color
+		var colour := {"vest": vest, "trousers": trousers, "atlet": SHIRT, "sleeves": SHIRT, "hat": cap}[kind] as Color
 		return Mat.textured("rough_linen", 0.08, colour, false, false)
 	if kind in ["mustache", "brows", "hair"]:
 		return Mat.material(hair, 0.9)

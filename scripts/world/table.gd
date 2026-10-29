@@ -6,12 +6,14 @@ const TOP := 0.75 # height of the felt surface
 const SIZE := 1.5
 const RIM := 0.07
 const FELT := Color(0.07, 0.3, 0.17)
+const DROP_HEIGHT := 0.025 # tiles are let go this far above the felt
 
 var _pile := Node3D.new()
 var _loose := Node3D.new()
 
 
 func _ready() -> void:
+	add_to_group("table")
 	var wood := Mat.textured("wood_table_worn", 0.9)
 	var wood_dark := Mat.textured("wood_table_worn", 0.9, Color(0.55, 0.45, 0.4))
 	var cloth := Mat.textured("rough_linen", 0.12, FELT, false)
@@ -30,8 +32,20 @@ func _ready() -> void:
 		var leg_height := TOP - 0.06
 		Mat.part(self, Mat.cylinder(0.03, leg_height, 0.035), wood_dark,
 			Vector3(corner.x * 0.62, leg_height * 0.5, corner.y * 0.62))
+	Mat.meshy(self, "kulluk", Vector3(0.4, TOP, -0.4), 0.6)
 	add_child(_pile)
 	add_child(_loose)
+	_build_collision()
+
+
+# Solid felt and rim for loose tiles, glasses and hands (the legs and frame never get touched).
+func _build_collision() -> void:
+	var body := Colliders.static_body(self)
+	var felt := SIZE - RIM * 2.0
+	Colliders.box(body, Vector3(SIZE, 0.06, SIZE), Transform3D(Basis(), Vector3(0, TOP - 0.03, 0)))
+	for side in 4:
+		var turn := Basis(Vector3.UP, side * PI * 0.5)
+		Colliders.box(body, Vector3(SIZE, 0.03, RIM), Transform3D(turn, turn * Vector3(0, TOP + 0.005, (felt + RIM) * 0.5)))
 
 
 ## Face-down draw pile in the middle plus the face-up indicator tile.
@@ -59,18 +73,34 @@ func show_pile(tiles: Array, indicator: Vector2i) -> void:
 	_pile.add_child(shown)
 
 
-## Lays a tile face up on the felt at a world point, its numbers upright for someone facing along yaw.
+## Drops a tile face up onto the felt at a world point, numbers upright for someone facing along yaw;
+## from there physics takes over (it lands, bounces a little and settles).
 func put_loose(tile: Tile, point: Vector3, yaw: float) -> void:
 	tile.holder = self
 	tile.reparent(_loose)
 	var local := to_local(point)
-	local.y = TOP + TileFactory.SIZE.z * 0.5
-	tile.slide_to(Transform3D(Basis(Vector3.UP, yaw) * Basis(Vector3.RIGHT, -PI * 0.5), local))
+	local.y = TOP + TileFactory.SIZE.z * 0.5 + DROP_HEIGHT
+	tile.transform = Transform3D(Basis(Vector3.UP, yaw) * Basis(Vector3.RIGHT, -PI * 0.5), local)
+	tile.set_loose(Vector3.DOWN * 0.3)
 
 
 func release(tile: Tile) -> int:
 	tile.holder = null
+	tile.pin()
 	return -1
+
+
+## Lowest height a hand may be at above a world point: the felt, the raised rim, and the top of the draw pile.
+func clearance(point: Vector3) -> float:
+	var local := to_local(point)
+	var y := TOP
+	if absf(local.x) > SIZE * 0.5 - RIM - 0.01 or absf(local.z) > SIZE * 0.5 - RIM - 0.01:
+		y = TOP + 0.022
+	for tile: Node3D in _pile.get_children():
+		var t := tile.position
+		if absf(local.x - t.x) < 0.035 and absf(local.z - t.z) < 0.045:
+			y = maxf(y, t.y + TileFactory.SIZE.z * 0.5)
+	return y
 
 
 ## Where a world-space ray meets the felt, or null if it lands outside the playing area.

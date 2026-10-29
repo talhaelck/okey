@@ -21,6 +21,32 @@
   Rebuild: `blender -b --factory-startup -P tools/blender/<dayi|hands>.py -- <abs path>/assets/models/dayi/<name>.glb [preview.png]`,
   props: `... -P tools/blender/props.py -- <abs path>/assets/models/props [preview.png]` (tea_set, tespih, semaver).
   Always render the preview and look at it after changing a model.
+- AI models come from Meshy (paid plan, assets are ours). Key: `MESHY_API_KEY` in the git-ignored `.env`.
+  `python tools/meshy.py balance|image|text|rig|animate|actions` saves raw GLBs to `raw/meshy/` (ignored by git and Godot);
+  `blender -b --factory-startup -P tools/blender/meshy_import.py -- <raw.glb> <out.glb> <height m> <faces> <texture px> [preview.png]`
+  makes them game-ready in `assets/models/meshy/`; place them with `Mat.meshy()`.
+- Opponents are rigged Meshy dayıs (`scripts/world/meshy_dayi.gd`, `Seat.DAYIS`, `Buddy.setup_meshy`): Meshy's Chair_Sit_Idle_M
+  frozen at frame 0 plus procedural breathing, head turn and two-bone arm IK (`reach()` / `release_hand()`), so arms never clip the table.
+  Pipeline per dayı: `meshy.py picture` -> `image` -> `meshy_import.py` -> `rig` -> `animate <rig id> <name> 33 343 307`,
+  then copy `raw/meshy/<name>_anim.glb` to `assets/models/meshy/<name>_sit.glb`. Meshy skeletons are in centimetres.
+- Better rig: Mixamo (free, Talha uploads by hand) adds finger bones. `mixamo_export.py` makes the upload FBX from
+  `assets/models/meshy/<name>.glb`; Talha's download goes to `raw/mixamo/indir/<name>.fbx` and `mixamo_import.py` turns it
+  into `assets/models/dayi_rig/<name>.glb` (Y-up metres, head and hands shrunk in the mesh by `proportions.py`).
+  Mixamo clips (FBX, Without Skin, 30 fps) go to `raw/mixamo/anim/` and `mixamo_anim.py` makes `dayi_rig/anim/<clip>.glb`.
+  `RiggedDayi` plays them (motion is mocap, never posed by hand) and only adds HandsOnTable (small arm IK onto the felt)
+  and HeadTurn (±45°). `Buddy.setup_meshy` uses it whenever a rig exists. Never scale bones at runtime: it tears the collar.
+  Check a seat with `godot --path . --script tests/dayi_side_view.gd -- <out prefix> <seat index>`.
+  After any change to dayıs, hands or racks run `godot --path . --headless --fixed-fps 30 --script tests/hands_clear_test.gd`:
+  it fails if any hand joint enters a rack or the felt in any frame (`Rack.penetration`).
+- `DayiHands` (`scripts/character/dayi_hands.gd`) makes a RiggedDayi handle real tiles: `rearrange`, `discard`, `pick_up`.
+  Per hand the pinch point (thumb/index tips) is carried by arm IK, fingers close, and the Tile is locked to the hand
+  (socket offset) until handed to `Rack.put` / `Table.put_loose`. Tiles leave a slot straight up (`RACK_LIFT`) before
+  moving sideways; he leans in only for far reaches. `RiggedDayi.demo` makes him fiddle on his own until rules drive him.
+  `godot --path . --headless --fixed-fps 30 --script tests/dayi_hands_test.gd` checks pinch accuracy, tile end
+  positions, held-tile drift and that no finger goes through a rack board.
+- `tools/blender/neck_weights.py` (run by mixamo_import.py) gives the chin and jowls fully to the head bone; Mixamo
+  splits them between head and chest and the double chin stretches when the head turns. Head turning is shared
+  with the chest (Posture) so the neck itself twists little.
 
 ## Layout
 ```

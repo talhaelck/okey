@@ -115,3 +115,4 @@ A modular dayı on **one shared skeleton**, so every part works with every anima
 * [docs/design/101_rules.md](docs/design/101_rules.md): 101 rules and every house rule as a setting with defaults and presets.
 * [docs/design/stealing.md](docs/design/stealing.md): steal zones, visibility log, "Yakala!", "Taş say!", friend mode, hooks for blackout and distractions.
 * [docs/design/screens.md](docs/design/screens.md): main menu, lobby, house-rules settings page, HUD, end of hand, character creator.
+* [YAPILACAKLAR.md](YAPILACAKLAR.md): Turkish to-do list / roadmap with every agreed feature.

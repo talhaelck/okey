@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://p800q3ryutpc"
-path="res://.godot/imported/hands.glb-5fb37287c5bdbcd120efca3d8d346a38.scn"
+uid="uid://dcqmccl72yy0v"
+path="res://.godot/imported/seated_idle.glb-ec57649e6212d04a022d83b050d95e4c.scn"
 
 [deps]
 
-source_file="res://assets/models/dayi/hands.glb"
-dest_files=["res://.godot/imported/hands.glb-5fb37287c5bdbcd120efca3d8d346a38.scn"]
+source_file="res://assets/models/dayi_rig/anim/seated_idle.glb"
+dest_files=["res://.godot/imported/seated_idle.glb-ec57649e6212d04a022d83b050d95e4c.scn"]
 
 [params]
 

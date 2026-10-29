@@ -83,17 +83,19 @@ def build():
         sphere("vest_button_%d" % i, (0.075 - (0.42 - z) * 0.12, -0.255 - (0.42 - z) * 0.12, z), 0.014,
                (1, 0.6, 1), mat("shoes"), root)
 
-    # Arms resting forward on the table edge, ending in real chubby hands.
-    arms = []
+    # Shirt sleeves resting forward on the table edge. The forearms and hands are the realistic MPFB arms
+    # (tools/blender/fp_hands.py) that the game mounts on the "hand_mount_*" empties at each palm:
+    # fingers along the mount's -Y, back of the hand +Z, rolled-up sleeve hiding the join.
+    sleeves = []
     for side in (-1, 1):
         shoulder, elbow, wrist = (side * 0.22, 0.0, 0.45), (side * 0.3, -0.06, 0.27), (side * 0.2, -0.3, 0.3)
-        arms += [capsule(shoulder, elbow, 0.065), capsule(elbow, wrist, 0.058)]
+        sleeves += [capsule(shoulder, elbow, 0.072), capsule(elbow, Vector(elbow).lerp(Vector(wrist), 0.35), 0.068)]
         reach = Vector(wrist) - Vector(elbow)
         reach.z = 0
         palm = Vector(wrist) + reach.normalized() * 0.08 + Vector((0, 0, -0.012))
-        hand("hand_" + ("l" if side > 0 else "r"), side, mat("skin"), root,
-             Matrix.Translation(palm) @ frame(reach), chubby=1.1, scale=1.45)
-    blob("arms", arms, mat("skin"), root)
+        mount = empty("hand_mount_" + ("l" if side > 0 else "r"), root)
+        mount.matrix_world = Matrix.Translation(palm) @ frame(reach)
+    blob("sleeves", sleeves, mat("atlet"), root)
 
     # Head: big round dome, ears and a bulbous nose all melted together.
     blob("head", [

@@ -1,51 +1,37 @@
 class_name TileFactory
 ## Builds okey tiles. A tile is Vector2i(color, number); color 4 is the fake okey.
 ## The printed face points along the tile's local +Z, upright along +Y.
+## Mesh from tools/blender/tiles.py, faces from the atlas made by tools/tile_atlas.py, drawn by shaders/tile.gdshader.
 
 const SIZE := Vector3(0.048, 0.07, 0.019)
 const FAKE_OKEY := 4
-const INK := [
-	Color(0.86, 0.16, 0.18), # red
-	Color(0.1, 0.1, 0.12), # black
-	Color(0.1, 0.38, 0.86), # blue
-	Color(0.95, 0.62, 0.05), # yellow
-	Color(0.16, 0.55, 0.3), # fake okey
-]
-const BODY := Color(0.93, 0.9, 0.82)
+const COLORS := 4
+const NUMBERS := 13
+const MESH_SCENE := preload("res://assets/models/tiles/tile.glb")
+const SHADER := preload("res://shaders/tile.gdshader")
 
-static var _mesh: ArrayMesh
-static var _font: SystemFont
+static var _mesh: Mesh
+static var _material: ShaderMaterial
+
+
+## Atlas cell of a tile value (must match the layout in tools/tile_atlas.py).
+static func cell(tile: Vector2i) -> int:
+	return NUMBERS * COLORS if tile.x == FAKE_OKEY else tile.x * NUMBERS + tile.y - 1
 
 
 static func create(tile: Vector2i) -> Tile:
 	if _mesh == null:
-		_mesh = RoundedBox.build(SIZE, 0.005, 2)
-		_font = SystemFont.new()
-		_font.font_names = PackedStringArray(["Arial Rounded MT Bold", "Arial Black", "Arial"])
-		_font.font_weight = 800
+		var scene: Node = MESH_SCENE.instantiate()
+		_mesh = (scene.find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D).mesh
+		scene.free()
+		_material = ShaderMaterial.new()
+		_material.shader = SHADER
+		_material.set_shader_parameter("atlas_albedo", load("res://assets/textures/tiles/tile_albedo.png"))
+		_material.set_shader_parameter("atlas_normal", load("res://assets/textures/tiles/tile_normal.png"))
 	var mi := Tile.new()
 	mi.value = tile
 	mi.add_to_group("tiles")
-	mi.mesh = _mesh
-	mi.material_override = Mat.material(BODY, 0.3)
-	var ink: Color = INK[tile.x]
-	if tile.x == FAKE_OKEY:
-		mi.add_child(_print("★", ink, 72, Vector3(0, 0.0, 0)))
-	else:
-		mi.add_child(_print(str(tile.y), ink, 64, Vector3(0, 0.007, 0)))
-		mi.add_child(_print("●", ink, 22, Vector3(0, -0.021, 0)))
+	mi.face.mesh = _mesh
+	mi.face.material_override = _material
+	mi.face.set_instance_shader_parameter("cell", float(cell(tile)))
 	return mi
-
-
-static func _print(text: String, ink: Color, font_size: int, offset: Vector3) -> Label3D:
-	var label := Label3D.new()
-	label.text = text
-	label.font = _font
-	label.font_size = font_size
-	label.pixel_size = 0.0005
-	label.modulate = ink
-	label.outline_size = 0
-	label.alpha_cut = Label3D.ALPHA_CUT_OPAQUE_PREPASS
-	label.double_sided = false
-	label.position = offset + Vector3(0, 0, SIZE.z * 0.5 + 0.0004)
-	return label

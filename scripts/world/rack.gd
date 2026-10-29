@@ -15,6 +15,7 @@ var _board := Basis(Vector3.RIGHT, -TILT)
 var _board_origin := Vector3(0, 0.014, -0.016) # bottom of the board's front face
 var _tiles := Node3D.new()
 var _slots: Array[Tile] = []
+var _gap := -1 # slot kept open for a tile hovering over the rack, -1 when none
 
 
 func _ready() -> void:
@@ -30,6 +31,10 @@ func _ready() -> void:
 		lip.basis = _board
 	add_child(_tiles)
 	_slots.resize(ROWS * SLOTS)
+	# Collision for loose tiles and glasses (tiles on the rack are pinned and need none).
+	var body := Colliders.static_body(self)
+	Colliders.box(body, Vector3(LENGTH, 0.014, 0.1), Transform3D(Basis(), Vector3(0, 0.007, 0)))
+	Colliders.box(body, Vector3(LENGTH, HEIGHT, 0.018), Transform3D(_board, _board_origin + _board.y * HEIGHT * 0.5 - _board.z * 0.009))
 
 
 ## Lays a fresh hand out: first half on the upper row, the rest on the lower row, each row centred.
@@ -47,18 +52,48 @@ func set_tiles(values: Array) -> void:
 
 
 ## Moves a tile into a free slot, sliding it there unless instant.
-func put(tile: Tile, index: int, animate := true) -> void:
+func put(tile: Tile, index: int, animate := true, time := 0.18) -> void:
 	_slots[index] = tile
 	tile.holder = self
+	tile.pin()
 	if tile.get_parent():
 		tile.reparent(_tiles)
 	else:
 		_tiles.add_child(tile)
 	var target := _slot_transform(index)
 	if animate:
-		tile.slide_to(target)
+		tile.slide_to(target, time)
 	else:
 		tile.transform = target
+
+
+## Can a tile be dropped at `index`: free, or its row has room for the neighbours to shift?
+func can_insert(index: int) -> bool:
+	return not _with_gap(index).is_empty()
+
+
+## Opens a gap at `index` while a dragged tile hovers there (-1 closes it). Only moves tiles visually.
+func show_gap(index: int) -> void:
+	if index == _gap:
+		return
+	_gap = index
+	var layout := _with_gap(index) if index >= 0 else _slots
+	if layout.is_empty():
+		layout = _slots
+	_layout(layout)
+
+
+## Drops a tile at `index`, pushing its row neighbours aside toward the nearest free slot.
+func insert(tile: Tile, index: int) -> void:
+	var layout := _with_gap(index)
+	_gap = -1
+	if layout.is_empty():
+		_layout(_slots)
+		put(tile, nearest_free(index))
+		return
+	_slots = layout
+	_layout(_slots)
+	put(tile, index, true, 0.08)
 
 
 ## Takes a tile off the rack and returns the slot it was in.
@@ -82,6 +117,10 @@ func nearest_free(index: int) -> int:
 	return -1
 
 
+func tile_at(index: int) -> Tile:
+	return _slots[index]
+
+
 func slot_global_transform(index: int) -> Transform3D:
 	return global_transform * _slot_transform(index)
 
@@ -101,6 +140,65 @@ func board_hit(from: Vector3, dir: Vector3) -> Dictionary:
 	var row := 1 if v > _row_bottom(1) - ROW_GAP * 0.5 else 0
 	var column := clampi(roundi(u / (TileFactory.SIZE.x + SLOT_GAP) + (SLOTS - 1) * 0.5), 0, SLOTS - 1)
 	return {"point": global_transform * hit, "slot": row * SLOTS + column}
+
+
+## Lowest height a hand may be at above a world point without passing through the board (-INF where clear).
+## Tiles themselves are not obstacles: fingers touch them.
+func clearance(point: Vector3) -> float:
+	var local := to_local(point)
+	if absf(local.x) > LENGTH * 0.5 + 0.02:
+		return -INF
+	var depth := (local - _board_origin).dot(_board.z) # 0 at the board's front face, + toward the owner
+	if depth > -0.035 and depth < 0.0:
+		return to_global(_board_origin + _board.y * (HEIGHT + 0.012)).y
+	if absf(local.z) < 0.05:
+		return global_position.y + 0.016 # the base under the tiles
+	return -INF
+
+
+## How far a world point has to move toward the owner (the rack's +Z) to be `margin` clear of the owner's side of
+## the rack: anything below the top of the board that is in or past the board, its tiles and lips, or on the base.
+## Points beyond the board count too, so a hand never ends up through it. 0 when clear; seated hands use this.
+func penetration(point: Vector3, margin := 0.0) -> float:
+	var local := to_local(point)
+	if absf(local.x) > LENGTH * 0.5 + margin:
+		return 0.0
+	var rel := local - _board_origin
+	var depth := rel.dot(_board.z) # 0 at the board's front face, + toward the owner
+	var front := 0.035 + margin # tiles and lips stand this far out of the board face
+	if rel.dot(_board.y) < HEIGHT + margin and depth < front:
+		return (front - depth) / _board.z.z
+	if absf(local.z) < 0.05 + margin and local.y < 0.014 + margin:
+		return 0.05 + margin - local.z
+	return 0.0
+
+
+# Slot contents after making room at `index`: the tiles between it and the nearest free slot in the same row
+# move one step toward that free slot. Empty when the row is full.
+func _with_gap(index: int) -> Array[Tile]:
+	var slots: Array[Tile] = _slots.duplicate()
+	if slots[index] == null:
+		return slots
+	var row := index / SLOTS * SLOTS
+	var column := index % SLOTS
+	for offset in range(1, SLOTS):
+		for direction in [-1, 1]:
+			var free: int = column + direction * offset
+			if free < 0 or free >= SLOTS or slots[row + free] != null:
+				continue
+			var c := free
+			while c != column:
+				slots[row + c] = slots[row + c - direction]
+				c -= direction
+			slots[index] = null
+			return slots
+	return []
+
+
+func _layout(layout: Array[Tile]) -> void:
+	for i in layout.size():
+		if layout[i]:
+			layout[i].slide_to(_slot_transform(i), 0.1)
 
 
 func _slot_transform(index: int) -> Transform3D:
