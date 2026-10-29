@@ -20,7 +20,7 @@ var _slots: Array[Tile] = []
 
 
 func _ready() -> void:
-	var walnut := SurfaceStyle.textured(Color("64432a"), SurfaceStyle.Kind.WOOD, 0.47)
+	var walnut := SurfaceStyle.textured(Color("64432a"), SurfaceStyle.Kind.WOOD, 0.67)
 	var dark := SurfaceStyle.textured(Color("39281c"), SurfaceStyle.Kind.WOOD, 0.6)
 	SurfaceStyle.part(self, RoundedBox.build(Vector3(LENGTH, 0.014, 0.1), 0.005), dark, Vector3(0, 0.007, 0))
 	var board := SurfaceStyle.part(self, RoundedBox.build(Vector3(LENGTH, HEIGHT, 0.018), 0.006), walnut,
@@ -30,8 +30,6 @@ func _ready() -> void:
 		var lip := SurfaceStyle.part(self, RoundedBox.build(Vector3(LENGTH, 0.01, 0.03), 0.004), dark,
 			_board_origin + _board.y * (_row_bottom(row) - 0.005) + _board.z * 0.015)
 		lip.basis = _board
-	var crest := SurfaceStyle.lettering(self, "S E", _board_origin + _board.y * 0.105 - _board.z * 0.020, 36, 0.0012, Color("b89a61"))
-	crest.basis = _board * Basis(Vector3.UP, PI)
 	for side in [-1,1]:
 		for y in [0.03,0.15]:
 			var pin := SurfaceStyle.part(self, Toon.sphere(0.0025), SurfaceStyle.metal(), _board_origin + Vector3(side*0.374,0,0) + _board.y*y + _board.z*0.002)
@@ -88,6 +86,25 @@ func nearest_free(index: int) -> int:
 				if c >= 0 and c < SLOTS and _slots[r * SLOTS + c] == null:
 					return r * SLOTS + c
 	return -1
+
+
+## Reuses the same tile objects and values; never creates or deletes a tile.
+func sort_tiles(by_number := false) -> void:
+	var tiles: Array[Tile] = []
+	for tile in _slots:
+		if is_instance_valid(tile):
+			tiles.append(tile)
+	tiles.sort_custom(func(a: Tile,b: Tile) -> bool:
+		var ka := 1000 if a.value.x == TileFactory.FAKE_OKEY else (a.value.y*5+a.value.x if by_number else a.value.x*14+a.value.y)
+		var kb := 1000 if b.value.x == TileFactory.FAKE_OKEY else (b.value.y*5+b.value.x if by_number else b.value.x*14+b.value.y)
+		return ka < kb)
+	_slots.fill(null)
+	var upper := ceili(tiles.size()/2.0)
+	for i in tiles.size():
+		var row := 1 if i < upper else 0
+		var in_row := upper if row == 1 else tiles.size()-upper
+		var column := (i if row == 1 else i-upper) + floori((SLOTS-in_row)/2.0)
+		put(tiles[i],row*SLOTS+column)
 
 
 func slot_global_transform(index: int) -> Transform3D:

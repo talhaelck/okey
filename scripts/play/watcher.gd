@@ -3,7 +3,7 @@ extends Node
 ## Stand-in brain for an opponent: mostly studies its own rack, now and then glances at another player.
 ## A short half-turn hints the glance before the full look. Whoever it looks at can be caught stealing.
 
-enum State { RACK, HINT, LOOK }
+enum State { RACK, HINT, LOOK, DISTRACTED }
 
 const HINT_TIME := 0.55
 const LOOK_TIME := Vector2(1.2, 2.4)
@@ -38,10 +38,36 @@ func _process(delta: float) -> void:
 		State.LOOK:
 			seat.buddy.look_home()
 			_set_state(State.RACK, randf_range(RACK_TIME.x, RACK_TIME.y))
+		State.DISTRACTED:
+			seat.buddy.look_home()
+			_set_state(State.RACK, randf_range(1.0,2.0))
 
 
 func is_watching(other: Seat) -> bool:
 	return _state == State.LOOK and target == other
+
+
+func can_see(point: Vector3, owner: Seat) -> bool:
+	if not is_watching(owner):
+		return false
+	var eye := seat.head_anchor.global_position
+	var forward := (owner.head_anchor.global_position-eye).normalized()
+	var direction := point-eye
+	return direction.length() < 2.6 and forward.dot(direction.normalized()) > cos(deg_to_rad(55.0))
+
+
+func distract(point: Vector3, duration := 1.8) -> void:
+	seat.buddy.look_toward(point)
+	_set_state(State.DISTRACTED,duration)
+
+
+func attention_text() -> String:
+	match _state:
+		State.RACK: return "ıstakasında"
+		State.HINT: return "başını çeviriyor"
+		State.DISTRACTED: return "sese bakıyor"
+		State.LOOK: return "SANA BAKIYOR" if target == local_seat else "başka yöne bakıyor"
+	return ""
 
 
 ## Shakes its head at the thief and keeps staring a little longer.

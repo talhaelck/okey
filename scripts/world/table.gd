@@ -15,11 +15,13 @@ var _loose := Node3D.new()
 
 func _ready() -> void:
 	var felt := SIZE - RIM * 2.0
-	var walnut := SurfaceStyle.textured(Color("68472f"), SurfaceStyle.Kind.WOOD, 0.5)
+	var walnut := SurfaceStyle.textured(Color("68472f"), SurfaceStyle.Kind.WOOD, 0.68)
 	var dark := SurfaceStyle.textured(Color("33251d"))
 	var brass := SurfaceStyle.metal(Color("a1824e"), 0.45)
 	SurfaceStyle.box(self, Vector3(SIZE+0.14,0.075,SIZE+0.14), Vector3(0,TOP-0.042,0), walnut, 0.025)
-	SurfaceStyle.box(self, Vector3(felt,0.012,felt), Vector3(0,TOP-0.005,0), SurfaceStyle.textured(Color("25473b"), SurfaceStyle.Kind.FABRIC, 0.94), 0.006)
+	var baize := ShaderMaterial.new()
+	baize.shader = preload("res://assets/shaders/okey_felt.gdshader")
+	SurfaceStyle.box(self, Vector3(felt,0.012,felt), Vector3(0,TOP-0.005,0), baize, 0.006)
 	for side in 4:
 		var pivot := Node3D.new()
 		pivot.rotation.y = side * PI * 0.5
@@ -33,15 +35,35 @@ func _ready() -> void:
 	for corner in [Vector2(-1, -1), Vector2(1, -1), Vector2(1, 1), Vector2(-1, 1)]:
 		SurfaceStyle.part(self, SurfaceStyle.lathe([Vector2(0.035,0),Vector2(0.04,0.05),Vector2(0.029,0.13),Vector2(0.036,0.42),Vector2(0.06,0.54),Vector2(0.055,0.65)]), dark, Vector3(corner.x*0.57,0,corner.y*0.57))
 		SurfaceStyle.part(self, Toon.cylinder(0.025,0.002), brass, Vector3(corner.x*0.65,TOP+0.023,corner.y*0.65))
-	CafeProps.tea(self, Vector3(-0.64,TOP+0.023,0.60), true)
-	CafeProps.tea(self, Vector3(0.64,TOP+0.023,-0.60))
-	SurfaceStyle.box(self, Vector3(0.22,0.045,0.004), Vector3(0,TOP-0.038,0.723), brass, 0.005)
-	SurfaceStyle.lettering(self, "SON EL  /  04", Vector3(0,TOP-0.038,0.727), 26, 0.0007, Color("372c1b"))
+	_details("ince_belli_tea",Vector3(-0.64,TOP+0.023,0.60),-0.12)
+	_details("ince_belli_tea",Vector3(0.64,TOP+0.023,-0.60),0.4)
+	_details("ince_belli_tea",Vector3(-0.64,TOP+0.023,-0.60),-0.6)
+	_details("turkish_coffee",Vector3(0.64,TOP+0.023,0.60),0.25)
+	_details("cherry_tespih",Vector3(-0.64,TOP+0.023,0.24))
+	_details("leblebi_bowl",Vector3(-0.64,TOP+0.023,-0.11))
+	_details("cut_glass_ashtray",Vector3(0.64,TOP+0.023,0.17))
+	_details("yazboz_pad",Vector3(0.47,TOP+0.023,0.67))
 	add_child(_pile)
 	add_child(_loose)
 
 
 ## Face-down draw pile in the middle plus the face-up indicator tile.
+func _details(id: String, pos: Vector3, yaw := 0.0) -> void:
+	var prop: Node3D = load("res://assets/models/table_details/%s.glb" % id).instantiate()
+	prop.name = id
+	prop.position = pos
+	prop.rotation.y = yaw
+	add_child(prop)
+	for mi: MeshInstance3D in prop.find_children("*","MeshInstance3D",true,false):
+		for i in mi.mesh.get_surface_count():
+			var mat := mi.mesh.surface_get_material(i)
+			if mat != null and mat.resource_name.begins_with("table_glass"):
+				mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+				var glass := ShaderMaterial.new()
+				glass.shader = preload("res://assets/shaders/thin_glass.gdshader")
+				mi.set_surface_override_material(i,glass)
+
+
 func show_pile(tiles: Array, indicator: Vector2i) -> void:
 	for child in _pile.get_children():
 		child.queue_free()

@@ -24,6 +24,8 @@ var buddy: Buddy
 var glove: MeshInstance3D
 var _arm_meshes: Array[MeshInstance3D] = []
 var _hands: Array[MeshInstance3D] = []
+var _knock_tween: Tween
+var _left_rest := Vector3.ZERO
 
 
 func _ready() -> void:
@@ -62,13 +64,15 @@ func _build_chair() -> void:
 # Cartoon gloves resting on the table edge, like the player's own hands.
 func _build_hands() -> void:
 	for side in [-1, 1]:
-		var hand := SurfaceStyle.part(self, Toon.sphere(0.044), SurfaceStyle.textured(Color("b1a393"), SurfaceStyle.Kind.LEATHER), Vector3(side * 0.30, Table.TOP + 0.045, 0.77))
-		hand.scale = Vector3(1.0, 0.8, 1.15)
+		var hand := MeshInstance3D.new()
+		hand.position = Vector3(side*0.30,Table.TOP+0.045,0.77)
+		add_child(hand)
+		var path := "res://assets/models/patrons/local_hand_left.glb" if side == -1 else "res://assets/models/patrons/local_hand.glb"
+		var model: Node3D = load(path).instantiate()
+		hand.add_child(model)
 		_hands.append(hand)
-		for finger in 3:
-			var tip := SurfaceStyle.part(hand, Toon.sphere(0.014), SurfaceStyle.textured(Color("b1a393"), SurfaceStyle.Kind.LEATHER), Vector3((finger-1)*0.023,0,-0.03))
-			tip.scale = Vector3(0.85,0.85,1.5)
-		SurfaceStyle.part(hand, Toon.sphere(0.018), SurfaceStyle.textured(Color("b1a393"), SurfaceStyle.Kind.LEATHER), Vector3(-side*0.034,0.002,-0.006))
+		if side == -1:
+			_left_rest = hand.position
 		SurfaceStyle.rod(self, Vector3(side*0.4,0.6,1.13), Vector3(side*0.33,0.71,0.97), 0.065, SurfaceStyle.textured(Color("34413b"), SurfaceStyle.Kind.FABRIC))
 		var arm := SurfaceStyle.part(self, Toon.cylinder(0.044,1.0,0.038), SurfaceStyle.textured(Color("34413b"), SurfaceStyle.Kind.FABRIC))
 		_arm_meshes.append(arm)
@@ -84,6 +88,20 @@ func _process(_delta: float) -> void:
 		_arm_meshes[i].position = (start+end)*0.5
 		_arm_meshes[i].quaternion = Quaternion(Vector3.UP, direction.normalized())
 		_arm_meshes[i].scale = Vector3(1,direction.length(),1)
+
+
+func knock_table() -> void:
+	if _hands.is_empty():
+		return
+	if _knock_tween:
+		_knock_tween.kill()
+	var left := _hands[0]
+	_knock_tween = create_tween()
+	_knock_tween.tween_property(left,"position",_left_rest+Vector3(0,0.06,-0.04),0.10)
+	_knock_tween.tween_property(left,"position",_left_rest+Vector3(0,-0.018,-0.04),0.055)
+	_knock_tween.tween_property(left,"position",_left_rest+Vector3(0,0.025,-0.04),0.055)
+	_knock_tween.tween_property(left,"position",_left_rest+Vector3(0,-0.018,-0.04),0.055)
+	_knock_tween.tween_property(left,"position",_left_rest,0.18)
 
 
 func _marker(pos: Vector3, target: Vector3) -> Marker3D:

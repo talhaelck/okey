@@ -13,3 +13,4 @@ Amaç, geliştirme kalitesini, oyun performansını ve mevcut özellikleri koruy
 - Durum mesajlarını, terminal çıktılarını ve açıklamaları kısa ve ilgili tut.
 - Görev sonunda yalnızca yapılan değişiklikleri, test sonuçlarını ve varsa önemli sorunları özetle.
 - GitHub'a yükleme (push veya PR oluşturma) işlemini yalnızca kullanıcı açıkça istediğinde yap.
+- Görsel çalışmalarda önce oyun içi görünüşü tamamla; kullanıcı özellikle istemedikçe performans ölçümü ve optimizasyon döngüsüne girme. Yalnızca açılışı ve değişen görünüşü kontrol et.

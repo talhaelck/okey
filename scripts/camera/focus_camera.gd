@@ -55,10 +55,12 @@ func set_focused(value: bool, instant := false) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if not mouse_control:
+		return
 	if event is InputEventMouseMotion:
 		if not focused and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-			_yaw = clampf(_yaw - event.relative.x * LOOK_SENSITIVITY, -YAW_LIMIT, YAW_LIMIT)
-			_pitch = clampf(_pitch - event.relative.y * LOOK_SENSITIVITY, PITCH_MIN, PITCH_MAX)
+			_yaw = clampf(_yaw - event.relative.x * LOOK_SENSITIVITY * CafePreferences.sensitivity, -YAW_LIMIT, YAW_LIMIT)
+			_pitch = clampf(_pitch - event.relative.y * LOOK_SENSITIVITY * CafePreferences.sensitivity, PITCH_MIN, PITCH_MAX)
 	elif event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_SPACE:
 			set_focused(not focused)

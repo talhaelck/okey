@@ -11,6 +11,7 @@ var _idle := ""
 var _tween: Tween
 var _alert := Label3D.new()
 var _mascot: MascotCharacter
+var _patron: CafePatron
 
 
 func setup(model: String, height: float) -> void:
@@ -18,6 +19,10 @@ func setup(model: String, height: float) -> void:
 		_mascot = MascotCharacter.new()
 		add_child(_mascot)
 		_mascot.build(model, height)
+	elif model in CafePatron.KINDS:
+		_patron = CafePatron.new()
+		add_child(_patron)
+		_patron.build(model)
 	else:
 		_setup_imported(model, height)
 	_setup_alert(height)
@@ -62,6 +67,10 @@ func look_home() -> void:
 
 
 func gesture(suffix: String) -> void:
+	if _patron:
+		if suffix == "No":
+			_patron.react()
+		return
 	if _mascot:
 		if suffix == "No":
 			_mascot.react()
@@ -76,6 +85,9 @@ func set_alert(on: bool) -> void:
 
 
 func _turn(yaw: float) -> void:
+	if _patron:
+		_patron.turn_head(yaw)
+		return
 	if _mascot:
 		_mascot.turn_head(yaw, TURN_TIME)
 		return

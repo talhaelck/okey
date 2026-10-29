@@ -21,6 +21,9 @@ var table: Table
 var watchers: Array[Watcher] = []
 
 var held: Tile
+## Builds only while a looking opponent can see the stolen tile; hidden in rack view.
+var exposure := 0.0
+const NOTICE_TIME := 0.55
 ## Short action text for the HUD ("" when nothing to do).
 var hint := ""
 ## Fixed screen point to aim at instead of the mouse in rack mode (debug screenshots only).
@@ -33,16 +36,24 @@ var _drop := {}
 var _hovered: Tile
 var _glove_rest: Transform3D
 var _highlight := StandardMaterial3D.new()
+var _tile_sound := AudioStreamPlayer3D.new()
+var _pickup_sound: AudioStreamWAV
+var _place_sound: AudioStreamWAV
 
 
 func _ready() -> void:
 	_glove_rest = seat.glove.global_transform
 	# Inverted-hull outline drawn over the hovered tile.
 	_highlight.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	_highlight.albedo_color = Color(1.0, 0.85, 0.2)
+	_highlight.albedo_color = Color(0.86, 0.73, 0.47)
 	_highlight.cull_mode = BaseMaterial3D.CULL_FRONT
 	_highlight.grow = true
-	_highlight.grow_amount = 0.003
+	_highlight.grow_amount = 0.0015
+	_pickup_sound = _make_tile_sound(1450.0,0.5)
+	_place_sound = _make_tile_sound(920.0,0.8)
+	_tile_sound.volume_db = -14
+	_tile_sound.max_distance = 5.0
+	add_child(_tile_sound)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -58,11 +69,15 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
+	if camera.mouse_control and not camera.focused and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		_set_hovered(null)
+		hint = ""
+		return
 	var ray := _ray()
 	if held:
 		_set_hovered(null)
 		_carry(ray[0], ray[1], delta)
-		_check_caught()
+		_check_caught(delta)
 	else:
 		_set_hovered(_pick(ray[0], ray[1]))
 		hint = "" if _hovered == null else ("Sol tık: çal" if _is_foreign(_hovered.holder) else "Sol tık: al")
@@ -82,12 +97,16 @@ func grab(tile: Tile) -> void:
 	tile.stop_sliding()
 	tile.reparent(self)
 	held = tile
+	exposure = 0.0
+	_drop = {}
+	_play_tile_sound(_pickup_sound,tile.global_position)
 
 
 func drop() -> void:
 	if held == null or _drop.is_empty():
 		return
 	var tile := held
+	_play_tile_sound(_place_sound,tile.global_position)
 	held = null
 	if _drop.has("rack"):
 		_drop.rack.put(tile, _drop.slot)
@@ -96,6 +115,7 @@ func drop() -> void:
 	if _stolen_from and _drop.get("rack") != _stolen_from:
 		stole.emit()
 	_stolen_from = null
+	exposure = 0.0
 
 
 func _carry(from: Vector3, dir: Vector3, delta: float) -> void:
@@ -116,18 +136,52 @@ func _carry(from: Vector3, dir: Vector3, delta: float) -> void:
 	held.global_transform = held.global_transform.interpolate_with(target, 1.0 - exp(-FOLLOW * delta))
 
 
-func _check_caught() -> void:
+func is_stealing() -> bool:
+	return held != null and _stolen_from != null
+
+
+func _check_caught(delta: float) -> void:
 	if _stolen_from == null:
+		exposure = 0.0
 		return
 	for watcher in watchers:
-		if watcher.is_watching(seat):
+		if watcher.can_see(held.global_position,seat):
+			exposure = minf(1.0,exposure + delta/NOTICE_TIME)
+			if exposure < 1.0:
+				return
 			var tile := held
 			held = null
 			_stolen_from.put(tile, _stolen_from.nearest_free(_origin_slot), true)
 			_stolen_from = null
+			exposure = 0.0
 			watcher.caught_thief()
 			caught.emit(watcher)
 			return
+	exposure = maxf(0.0,exposure-delta/0.35)
+
+
+func _play_tile_sound(stream: AudioStreamWAV, point: Vector3) -> void:
+	_tile_sound.global_position = point
+	_tile_sound.stream = stream
+	_tile_sound.play()
+
+
+func _make_tile_sound(frequency: float, strength: float) -> AudioStreamWAV:
+	var bytes := PackedByteArray()
+	bytes.resize(1764*2)
+	var random := RandomNumberGenerator.new()
+	random.seed = int(frequency)
+	for i in 1764:
+		var t := i/22050.0
+		var ring := sin(TAU*frequency*t)*0.44 + sin(TAU*frequency*2.31*t)*0.15
+		var attack := random.randf_range(-0.3,0.3)*exp(-300*t)
+		var value := strength*(ring*exp(-90*t)+attack)
+		bytes.encode_s16(i*2,clampi(int(value*24000),-32768,32767))
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate = 22050
+	stream.data = bytes
+	return stream
 
 
 func _ray() -> Array[Vector3]:

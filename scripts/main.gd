@@ -10,6 +10,10 @@ var hud := Hud.new()
 var watchers: Array[Watcher] = []
 var stolen := 0
 var caught := 0
+const KNOCK_COOLDOWN := 8.0
+var _knock_cooldown := 0.0
+var _sort_by_number := false
+var _knock_sound := AudioStreamPlayer3D.new()
 
 @onready var camera: FocusCamera = $FocusCamera
 @onready var table: Table = $Table
@@ -37,30 +41,94 @@ func _ready() -> void:
 	add_child(hand)
 	hand.stole.connect(_on_stole)
 	hand.caught.connect(_on_caught)
+	hud.camera = camera
 	add_child(hud)
+	_setup_knock_sound()
 
 	var args := _user_args()
-	if args.has("screenshot"):
+	if args.has("screenshot") and not get_parent().has_method("_home"):
 		_capture(args)
 	else:
 		camera.set_focused(false, true)
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	_knock_cooldown = maxf(0.0,_knock_cooldown-delta)
 	hud.show_crosshair(not camera.focused)
 	hud.set_hint(hand.hint)
+	hud.set_table_state(watchers,camera.focused,_knock_cooldown,hand.exposure,hand.is_stealing(),hand.held != null)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not (event is InputEventKey and event.pressed and not event.echo):
+		return
+	if not camera.focused and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		return
+	if event.keycode == KEY_Q:
+		knock_table()
+	elif event.keycode == KEY_S:
+		if hand.held != null:
+			hud.flash("Önce elindeki taşı bırak",Color("d8bb85"))
+		elif not camera.focused:
+			hud.flash("Önce ıstakana odaklan",Color("d8bb85"))
+		else:
+			_sort_by_number = not _sort_by_number
+			seats[0].rack.sort_tiles(_sort_by_number)
+			hud.flash("Sayı sırası" if _sort_by_number else "Renk sırası",Color("b9cfa6"))
+
+
+func knock_table() -> bool:
+	if camera.focused:
+		hud.flash("Önce masaya bak",Color("d8bb85"))
+		return false
+	if hand.held != null:
+		hud.flash("Önce elindeki taşı bırak",Color("d8bb85"))
+		return false
+	if _knock_cooldown > 0.0:
+		return false
+	_knock_cooldown = KNOCK_COOLDOWN
+	seats[0].knock_table()
+	_knock_sound.global_position = seats[0].to_global(Vector3(-0.30,Table.TOP+0.03,0.73))
+	_knock_sound.play()
+	var candidates := watchers.duplicate()
+	candidates.shuffle()
+	for i in mini(2,candidates.size()):
+		(candidates[i] as Watcher).distract(_knock_sound.global_position,1.8+i*0.25)
+	return true
+
+
+func _setup_knock_sound() -> void:
+	var bytes := PackedByteArray()
+	bytes.resize(4400*2)
+	var noise := RandomNumberGenerator.new()
+	noise.seed = 71
+	for i in 4400:
+		var t := i/22050.0
+		var wave := (sin(TAU*160*t)*0.65+sin(TAU*390*t)*0.18+noise.randf_range(-0.12,0.12))*exp(-60*t)
+		if t > 0.065:
+			var u := t-0.065
+			wave += (sin(TAU*175*u)*0.55+sin(TAU*420*u)*0.15)*exp(-65*u)
+		bytes.encode_s16(i*2,clampi(int(wave*22000),-32768,32767))
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate = 22050
+	stream.data = bytes
+	_knock_sound.stream = stream
+	_knock_sound.volume_db = -5
+	_knock_sound.max_distance = 8.0
+	add_child(_knock_sound)
 
 
 func _on_stole() -> void:
 	stolen += 1
 	hud.set_score(stolen, caught)
-	hud.flash("Çaktırmadan aldın!", Color(0.45, 1.0, 0.5))
+	hud.flash("Taş sende", Color("bbc6a3"))
 
 
 func _on_caught(_by: Watcher) -> void:
 	caught += 1
 	hud.set_score(stolen, caught)
-	hud.flash("YAKALANDIN!", Color(1.0, 0.3, 0.25))
+	hud.flash("Yakalandın", Color("d19375"))
 
 
 func _deal() -> void:
